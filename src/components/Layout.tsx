@@ -1,4 +1,3 @@
-// src/components/Layout.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -6,12 +5,9 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/firebase";
 import { FiHome, FiUsers, FiBox, FiClipboard, FiSettings, FiLogOut } from "react-icons/fi";
+import "@/app/globals.css";
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -34,26 +30,25 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   const navButtons = [
-    { icon: <FiHome size={24} />, path: "/" },
-    { icon: <FiUsers size={24} />, path: "/users" },
-    { icon: <FiBox size={24} />, path: "/assets" },
-    { icon: <FiClipboard size={24} />, path: "/requests" },
-    { icon: <FiSettings size={24} />, path: "/settings" },
-    { icon: <FiLogOut size={24} />, action: handleLogout },
+    { icon: <FiHome />, path: "/" },
+    { icon: <FiUsers />, path: "/users" },
+    { icon: <FiBox />, path: "/assets" },
+    { icon: <FiClipboard />, path: "/requests" },
+    { icon: <FiSettings />, path: "/settings" },
+    { icon: <FiLogOut />, action: handleLogout },
   ];
 
   if (loading) return <p>Loading...</p>;
   if (!user) return null;
 
   return (
-    <div className="dashboard-container">
-      {/* Top Navigation */}
-      <header className="dashboard-header">
-        <div className="nav-items">
+    <div className="layout-container">
+      <header className="layout-header">
+        <div className="header-icons">
           {navButtons.map((btn, idx) => (
             <button
               key={idx}
-              className="nav-btn"
+              className="nav-icon"
               onClick={() => (btn.path ? router.push(btn.path) : btn.action?.())}
             >
               {btn.icon}
@@ -62,9 +57,10 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="dashboard-main">
-        {children}
+      <main className="layout-main">
+        <div className="dashboard-card">
+          {children}
+        </div>
       </main>
     </div>
   );
