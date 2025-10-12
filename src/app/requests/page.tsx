@@ -1,100 +1,179 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import * as XLSX from "xlsx";
+import { useUserData } from "./hooks/useUserData";
+import { useFormHandler } from "./hooks/useFormHandler";
+import { useForms } from "./hooks/useForms";
+import { useSubmissions } from "./hooks/useSubmissions";
 
-interface FormData {
-  filename: string;
-  url: string;
-}
+export default function RequestsPage() {
+  const SERVER_URL = "http://192.168.100.13:3001";
+  const user = useUserData();
+  const forms = useForms(SERVER_URL);
+  const { submissions, loading: loadingSubs } = useSubmissions();
 
-export default function FormsPage() {
-  const [forms, setForms] = useState<FormData[]>([]);
-  const [selected, setSelected] = useState<FormData | null>(null);
-  const [tableData, setTableData] = useState<any[][]>([]);
-  const [saving, setSaving] = useState(false);
+  const {
+    selectedForm,
+    placeholders,
+    formValues,
+    loading,
+    isReadOnly,
+    handleSelect,
+    handleChange,
+    handleSubmit,
+  } = useFormHandler(SERVER_URL);
 
-  useEffect(() => {
-    fetch("http://localhost:3001/forms")
-      .then(res => res.json())
-      .then(data => {
-        const list = data.forms.map((f: string) => ({
-          filename: f,
-          url: `http://localhost:3001/uploads/${f}`,
-        }));
-        setForms(list);
-      });
-  }, []);
-
-  const handleSelect = async (form: FormData) => {
-    setSelected(form);
-    const res = await fetch(form.url);
-    const buffer = await res.arrayBuffer();
-    const workbook = XLSX.read(buffer, { type: "array" });
-    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-    const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-    setTableData(json as any[][]);
+  // --- Split logic ---
+  const handleSelectTemplate = (form: any) => {
+    handleSelect(form, false); // normal new fill
   };
 
-  const handleCellChange = (row: number, col: number, value: string) => {
-    const newData = [...tableData];
-    newData[row][col] = value;
-    setTableData(newData);
+  const handleSelectSubmission = (s: any) => {
+    handleSelect(
+      {
+        ...s,
+        id: s.id,
+        url: null, // prevents Excel load attempt
+        filledData: s.filledData,
+      },
+      s.status !== "pending" // readonly if already approved
+    );
   };
 
-  const handleSave = async () => {
-    if (!selected) return;
-    setSaving(true);
-    const ws = XLSX.utils.aoa_to_sheet(tableData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([wbout], { type: "application/octet-stream" });
-    const formData = new FormData();
-    formData.append("file", new File([blob], selected.filename));
-    await fetch("http://localhost:3001/fill", {
+const handleGenerate = async () => {
+  if (!selectedForm) return;
+
+  // extract original template name up to ".xlsx"
+  const idx = selectedForm.filename.indexOf(".xlsx");
+  if (idx === -1) return alert("Invalid file name");
+  const originalTemplate = selectedForm.filename.slice(0, idx + 5); // include ".xlsx"
+
+  try {
+    const res = await fetch(`${SERVER_URL}/fill`, {
       method: "POST",
-      body: formData,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filename: originalTemplate, // send correct template name
+        data: formValues,
+      }),
     });
-    alert("Saved filled form!");
-    setSaving(false);
-  };
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Generate failed:", text);
+      return alert("Failed to generate document");
+    }
+
+    const result = await res.json();
+    const link = document.createElement("a");
+    link.href = `${SERVER_URL}${result.url}`;
+    link.download = result.url.split("/").pop();
+    link.click();
+  } catch (err) {
+    console.error("Generate error:", err);
+    alert("Failed to generate document");
+  }
+};
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Available Excel Forms</h2>
-      {forms.map(f => (
-        <div key={f.filename} style={{ marginBottom: 8 }}>
-          <button onClick={() => handleSelect(f)}>{f.filename}</button>
+    <div>
+      <h2>Templates</h2>
+      {forms.map((f) => (
+        <div key={f.filename}>
+          <span>{f.filename}</span>
+          <button onClick={() => handleSelectTemplate(f)}>Select</button>
         </div>
       ))}
 
-      {selected && tableData.length > 0 && (
-        <div style={{ marginTop: 20 }}>
-          <h3>Editing: {selected.filename}</h3>
-          <table border={1}>
-            <tbody>
-              {tableData.map((row, rIdx) => (
-                <tr key={rIdx}>
-                  {row.map((cell, cIdx) => (
-                    <td key={cIdx}>
-                      <input
-                        style={{ width: 80 }}
-                        value={cell || ""}
-                        onChange={e =>
-                          handleCellChange(rIdx, cIdx, e.target.value)
-                        }
-                      />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <button onClick={handleSave} disabled={saving} style={{ marginTop: 10 }}>
-            {saving ? "Saving..." : "Save Filled Form"}
+      {selectedForm && placeholders.length > 0 && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+        >
+          <h3>{selectedForm.filename}</h3>
+          {placeholders.map((p) => {
+            const isSig = /^signature\d*$/i.test(p);
+            if (isSig) {
+              const lvl = parseInt(p.replace("signature", "")) || 1;
+              const canSign = (user?.signatoryLevel || 0) >= lvl;
+              const signed = !!formValues[p];
+              const addSig = () => {
+                if (!user?.signature) return alert("No signature found");
+                handleChange(p, user.signature);
+                alert(`Signature L${lvl} added`);
+              };
+              return (
+                <div key={p}>
+                  <label>{p}</label>
+                  {canSign ? (
+                    <button type="button" onClick={addSig} disabled={signed || isReadOnly}>
+                      {signed ? `Signed (L${lvl})` : `Add Signature (L${lvl})`}
+                    </button>
+                  ) : (
+                    <p>Requires level {lvl}</p>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <div key={p}>
+                <label>{p}</label>
+                <input
+                  value={formValues[p] ?? ""}
+                  onChange={(e) => handleChange(p, e.target.value)}
+                  readOnly={isReadOnly || (selectedForm?.status && selectedForm.status !== "pending")}
+                />
+              </div>
+            );
+          })}
+
+          <button
+            type="submit"
+            disabled={loading || isReadOnly || (selectedForm?.status && selectedForm.status !== "pending")}
+          >
+            {isReadOnly || (selectedForm?.status && selectedForm.status !== "pending")
+              ? "Locked"
+              : loading
+              ? "Saving..."
+              : "Submit"}
           </button>
-        </div>
+
+          <button type="button" onClick={handleGenerate} disabled={loading}>
+            Generate Document
+          </button>
+        </form>
+      )}
+
+      <h2>Submissions</h2>
+      {loadingSubs ? (
+        <p>Loading...</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>Filename</th>
+              <th>By</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {submissions.map((s) => (
+              <tr
+                key={s.id}
+                style={{ cursor: "pointer" }}
+                onClick={() => handleSelectSubmission(s)}
+              >
+                <td>{s.filename.split("_")[0]}</td>
+                <td>{s.filledBy || "?"}</td>
+                <td>{s.status || "pending"}</td>
+                <td>{s.timestamp?.toDate ? s.timestamp.toDate().toLocaleString() : ""}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );

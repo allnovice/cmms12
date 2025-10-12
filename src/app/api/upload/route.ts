@@ -9,32 +9,31 @@ export async function POST(req: Request) {
   try {
     const data = await req.formData();
     const file = data.get("file") as File;
+    const uid = data.get("uid") as string; // send user uid from frontend
 
-    if (!file) {
-      return Response.json({ error: "No file provided" }, { status: 400 });
+    if (!file || !uid) {
+      return Response.json({ error: "File or UID missing" }, { status: 400 });
     }
 
-    // Convert to buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Upload to Cloudinary as raw (for PDFs)
     const uploadResult = await new Promise<any>((resolve, reject) => {
-      cloudinary.uploader
-        .upload_stream(
-          {
-            folder: process.env.CLOUDINARY_FOLDER || "requests",
-            resource_type: "raw", // ✅ important for PDFs
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        )
-        .end(buffer);
+      cloudinary.uploader.upload_stream(
+        {
+          folder: process.env.CLOUDINARY_FOLDER || "settings",
+          resource_type: "image",
+          public_id: `signature_${uid}`, // unique per user
+          overwrite: true,
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      ).end(buffer);
     });
 
-    return Response.json(uploadResult);
+    return Response.json({ secure_url: uploadResult.secure_url });
   } catch (err: any) {
     console.error("Upload error:", err);
     return Response.json({ error: err.message }, { status: 500 });
