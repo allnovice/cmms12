@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase";
 import axios from "axios";
+import "./page.css";
 
 const CLOUDINARY_FOLDER = process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || "settings";
 const CLOUDINARY_URL = process.env.NEXT_PUBLIC_CLOUDINARY_URL!;
@@ -122,46 +123,46 @@ export default function SettingsPage() {
   if (!userData) return <p>Loading user...</p>;
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Settings</h2>
-      <div style={{ marginBottom: 12 }}>
-        <label>Email (read-only)</label>
-        <input type="text" value={userData.email} readOnly style={{ width: "100%", padding: 6 }} />
-      </div>
+    <div className="settings-form">
+  <h2>Settings</h2>
 
-      <div style={{ marginBottom: 12 }}>
-        <label>Full Name</label>
-        <input type="text" value={fullname} onChange={(e) => setFullname(e.target.value)} style={{ width: "100%", padding: 6 }} />
-      </div>
+  <div>
+    <label>Email (read-only)</label>
+    <input type="text" value={userData.email} readOnly />
+  </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <label>Signature</label>
-        <canvas
-          ref={canvasRef}
-          width={300}
-          height={150}
-          style={{ border: "1px solid #ccc", touchAction: "none" }}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-          onTouchStart={startTouch}
-        />
-        <div style={{ marginTop: 6 }}>
-          <button onClick={clearCanvas}>Clear</button>
-        </div>
-      </div>
+  <div>
+    <label>Full Name</label>
+    <input type="text" value={fullname} onChange={(e) => setFullname(e.target.value)} />
+  </div>
 
-      {userData.signature && (
-        <div style={{ marginBottom: 12 }}>
-          <p>Saved Signature:</p>
-          <img src={userData.signature} alt="Signature" style={{ border: "1px solid #ccc" }} />
-        </div>
-      )}
-
-      <button onClick={saveSignature} disabled={loading}>
-        {loading ? "Saving..." : "Save"}
-      </button>
+  <div>
+    <label>Signature</label>
+    <canvas
+      ref={canvasRef}
+      width={300}
+      height={150}
+      onMouseDown={startDrawing}
+      onMouseMove={draw}
+      onMouseUp={stopDrawing}
+      onMouseLeave={stopDrawing}
+      onTouchStart={startTouch}
+    />
+    <div className="settings-actions">
+      <button onClick={clearCanvas}>Clear</button>
     </div>
+  </div>
+
+  {userData.signature && (
+    <div>
+      <p>Saved Signature:</p>
+      <img src={userData.signature} alt="Signature" className="signature-preview" />
+    </div>
+  )}
+
+  <button onClick={saveSignature} disabled={loading}>
+    {loading ? "Saving..." : "Save"}
+  </button>
+</div>
   );
 }

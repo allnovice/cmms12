@@ -57,10 +57,15 @@ XLSX.utils.sheet_to_json(sheet, { header: 1 }).forEach((row: unknown) => {
 
       // 🔹 CASE 2: Existing submission (no url, has filledData)
       else if (form.filledData) {
-        const keys = Object.keys(form.filledData);
-        setPlaceholders(keys);
-        setFormValues(form.filledData);
-      }
+  // try to keep original placeholder order if available
+  const orderedKeys =
+    form.placeholders && Array.isArray(form.placeholders)
+      ? form.placeholders
+      : Object.keys(form.filledData);
+
+  setPlaceholders(orderedKeys);
+  setFormValues(form.filledData);
+}
 
       else {
         throw new Error("Invalid form selection — no URL or data found");
@@ -76,21 +81,61 @@ XLSX.utils.sheet_to_json(sheet, { header: 1 }).forEach((row: unknown) => {
   const handleChange = (key: string, val: string) =>
     setFormValues((p) => ({ ...p, [key]: val }));
 
-  const handleSubmit = async () => {
+const handleSubmit = async () => {
   if (!selectedForm || !auth.currentUser) return;
   setLoading(true);
 
   try {
     const user = auth.currentUser;
     const userName = user.displayName || user.email?.split("@")[0] || "user";
+    const userUid = user.uid;
+    const userLvl = (user as any)?.signatoryLevel || 0;
+    const targetSig = `signature${userLvl}`;
+    const userSig = (user as any)?.signature || userName;
 
-    // 🔹 Determine if any signature field is filled
-    const hasSignature = Object.keys(formValues).some(
-      (key) => key.toLowerCase().startsWith("signature") && formValues[key]
+    // ✅ Must have own signature (by UID inside URL)
+    const hasOwnSignature = Object.entries(formValues).some(
+      ([key, value]) =>
+        key.toLowerCase().startsWith("signature") &&
+        typeof value === "string" &&
+        value.includes(userUid)
     );
-    const nextStatus = hasSignature ? "approved" : "pending";
 
-    // 🔹 Update existing submission (if editing and still pending)
+    if (!hasOwnSignature) {
+      alert("⚠️ You must add your signature before submitting.");
+      setLoading(false);
+      return;
+    }
+
+    // ✅ Prevent signing if this level is already signed by another user
+    if (formValues[targetSig] && formValues[targetSig] !== userSig) {
+      alert("⚠️ This document was already signed by another user at your level.");
+      setLoading(false);
+      return;
+    }
+
+    // ✅ Prevent editing if a *lower-level* signature already exists
+    const lowerSigned = placeholders
+      .filter((p) => /^signature\d*$/i.test(p))
+      .some((p) => {
+        const lvl = parseInt(p.replace(/\D/g, "")) || 0;
+        return lvl < userLvl && !!formValues[p];
+      });
+
+    if (lowerSigned) {
+      alert("⚠️ You cannot edit or overwrite a document already signed by a lower-level user.");
+      setLoading(false);
+      return;
+    }
+
+    // ✅ Check if all signatures complete
+    const allSignaturesComplete = placeholders
+      .filter((p) => /^signature\d*$/i.test(p))
+      .every((p) => !!formValues[p]);
+
+    const nextStatus = allSignaturesComplete ? "approved" : "pending";
+
+    // 🔹 Update existing submission
     if (selectedForm?.id) {
       const ref = doc(db, "form_submissions", selectedForm.id);
       await updateDoc(ref, {
@@ -99,19 +144,17 @@ XLSX.utils.sheet_to_json(sheet, { header: 1 }).forEach((row: unknown) => {
         timestamp: serverTimestamp(),
       });
       alert("✅ Document updated");
-    }
-
-    // 🔹 New submission
-    else {
+    } else {
+      // 🔹 New submission
       const newDoc = await addDoc(collection(db, "form_submissions"), {
         filename: `${selectedForm.filename}_${userName}`,
         filledData: formValues,
+        placeholders,
         filledBy: userName,
         status: nextStatus,
         timestamp: serverTimestamp(),
       });
 
-      // attach docId and make filename more trackable
       await updateDoc(doc(db, "form_submissions", newDoc.id), {
         docId: newDoc.id,
         filename: `${selectedForm.filename}_${userName}_${newDoc.id}`,
