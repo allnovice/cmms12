@@ -33,19 +33,21 @@ export function useFormHandler(serverUrl: string) {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const values: string[] = [];
 
-        XLSX.utils.sheet_to_json(sheet, { header: 1 }).forEach((row: any[]) =>
-          row.forEach((cell: any) => {
-            if (typeof cell === "string") {
-              const matches = cell.match(/{{(.*?)}}/g);
-              if (matches) {
-                matches.forEach((m) => {
-                  const key = m.replace(/[{}]/g, "").trim();
-                  if (!values.includes(key)) values.push(key);
-                });
-              }
-            }
-          })
-        );
+XLSX.utils.sheet_to_json(sheet, { header: 1 }).forEach((row: unknown) => {
+  if (Array.isArray(row)) {
+    row.forEach((cell) => {
+      if (typeof cell === "string") {
+        const matches = cell.match(/{{(.*?)}}/g);
+        if (matches) {
+          matches.forEach((m) => {
+            const key = m.replace(/[{}]/g, "").trim();
+            if (!values.includes(key)) values.push(key);
+          });
+        }
+      }
+    });
+  }
+});
 
         const initialValues: Record<string, string> = {};
         values.forEach((v) => (initialValues[v] = ""));
