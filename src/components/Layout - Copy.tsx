@@ -56,11 +56,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { icon: <FiLogOut />, action: handleLogout },
   ];
 
-if (loading) return <p>Loading...</p>;
-  if (!user) {
-    router.replace("/login");
-    return <p>Redirecting...</p>;
-  }
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/login");
+    }
+  }, [user, loading, router]);
+
+  if (loading) return <p>Loading...</p>;
+  if (!user) return <p>Redirecting...</p>;
+
 
   return (
     <div className="layout-container">

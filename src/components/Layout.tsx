@@ -19,7 +19,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`http://localhost:3002/notifications/${user.signatoryLevel}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_SERV_URL2}/notifications/${user.signatoryLevel}`);
         const data = await res.json();
         // Filter notifications that match the user's level
         const filtered = (data.pending || []).filter((f: any) => {
