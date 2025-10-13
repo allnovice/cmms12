@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import "./RequestsPage.css";
 
 export default function RequestsPage() {
-  const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
+  const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
   const { user } = useAuth();
   const forms = useForms(SERVER_URL);
   const { submissions, loading: loadingSubs } = useSubmissions();

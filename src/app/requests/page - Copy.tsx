@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 export default function RequestsPage() {
   const SERVER_URL = "http://192.168.100.13:3001";
   const { user } = useAuth();
-  const forms = useForms(SERVER_URL);
+  const forms = SERVER_URL ? useForms(SERVER_URL) : [];
   const { submissions, loading: loadingSubs } = useSubmissions();
 
   const {
