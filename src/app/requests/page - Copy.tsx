@@ -1,15 +1,15 @@
 "use client";
 
-//import { useUserData } from "./hooks/useUserData";
 import { useFormHandler } from "./hooks/useFormHandler";
 import { useForms } from "./hooks/useForms";
 import { useSubmissions } from "./hooks/useSubmissions";
 import { useAuth } from "@/context/AuthContext";
+import "./RequestsPage.css";
 
 export default function RequestsPage() {
-  const SERVER_URL = "http://192.168.100.13:3001";
+  const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
   const { user } = useAuth();
-  const forms = SERVER_URL ? useForms(SERVER_URL) : [];
+  const forms = useForms(SERVER_URL);
   const { submissions, loading: loadingSubs } = useSubmissions();
 
   const {
@@ -23,57 +23,71 @@ export default function RequestsPage() {
     handleSubmit,
   } = useFormHandler(SERVER_URL);
 
-  // --- Split logic ---
+  // select a new blank template
   const handleSelectTemplate = (form: any) => {
-    handleSelect(form, false); // normal new fill
+    handleSelect(form, false);
   };
 
+  // open existing submission (read-only if approved)
   const handleSelectSubmission = (s: any) => {
     handleSelect(
       {
         ...s,
         id: s.id,
-        url: null, // prevents Excel load attempt
+        url: null,
         filledData: s.filledData,
       },
-      s.status !== "pending" // readonly if already approved
+      s.status !== "pending"
     );
   };
 
-const handleGenerate = async () => {
-  if (!selectedForm) return;
+  // generate filled document
+  const handleGenerate = async () => {
+    if (!selectedForm) return;
 
-  // extract original template name up to ".xlsx"
-  const idx = selectedForm.filename.indexOf(".xlsx");
-  if (idx === -1) return alert("Invalid file name");
-  const originalTemplate = selectedForm.filename.slice(0, idx + 5); // include ".xlsx"
+    const idx = selectedForm.filename.indexOf(".xlsx");
+    if (idx === -1) return alert("Invalid file name");
+    const originalTemplate = selectedForm.filename.slice(0, idx + 5);
 
-  try {
-    const res = await fetch(`${SERVER_URL}/fill`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        filename: originalTemplate, // send correct template name
-        data: formValues,
-      }),
-    });
+    try {
+      const res = await fetch(`${SERVER_URL}/fill`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: originalTemplate,
+          data: formValues,
+        }),
+      });
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("Generate failed:", text);
-      return alert("Failed to generate document");
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Generate failed:", text);
+        return alert("Failed to generate document");
+      }
+
+      const result = await res.json();
+      const link = document.createElement("a");
+      link.href = `${SERVER_URL}${result.url}`;
+      link.download = result.url.split("/").pop();
+      link.click();
+    } catch (err) {
+      console.error("Generate error:", err);
+      alert("Failed to generate document");
     }
+  };
 
-    const result = await res.json();
-    const link = document.createElement("a");
-    link.href = `${SERVER_URL}${result.url}`;
-    link.download = result.url.split("/").pop();
-    link.click();
-  } catch (err) {
-    console.error("Generate error:", err);
-    alert("Failed to generate document");
-  }
-};
+  // check if all signatures are filled
+  const allSignaturesComplete = () =>
+    placeholders
+      .filter((p) => /^signature\d*$/i.test(p))
+      .every((p) => !!formValues[p]);
+
+  // check if current user must sign before submit
+  const mustSignBeforeSubmit = () => {
+    const userLvl = user?.signatoryLevel || 0;
+    const targetField = `signature${userLvl}`;
+    return placeholders.includes(targetField) && !formValues[targetField];
+  };
 
   return (
     <div>
@@ -89,26 +103,41 @@ const handleGenerate = async () => {
         <form
           onSubmit={(e) => {
             e.preventDefault();
+
+            // prevent submission unless user has signed
+            if (mustSignBeforeSubmit()) {
+              alert("Please add your signature before submitting.");
+              return;
+            }
+
+            // when submitted: stays pending until all signatures added
             handleSubmit();
           }}
         >
           <h3>{selectedForm.filename}</h3>
+
           {placeholders.map((p) => {
             const isSig = /^signature\d*$/i.test(p);
             if (isSig) {
               const lvl = parseInt(p.replace("signature", "")) || 1;
               const canSign = (user?.signatoryLevel || 0) >= lvl;
               const signed = !!formValues[p];
+
               const addSig = () => {
                 if (!user?.signature) return alert("No signature found");
                 handleChange(p, user.signature);
                 alert(`Signature L${lvl} added`);
               };
+
               return (
                 <div key={p}>
                   <label>{p}</label>
                   {canSign ? (
-                    <button type="button" onClick={addSig} disabled={signed || isReadOnly}>
+                    <button
+                      type="button"
+                      onClick={addSig}
+                      disabled={signed || isReadOnly}
+                    >
                       {signed ? `Signed (L${lvl})` : `Add Signature (L${lvl})`}
                     </button>
                   ) : (
@@ -124,7 +153,10 @@ const handleGenerate = async () => {
                 <input
                   value={formValues[p] ?? ""}
                   onChange={(e) => handleChange(p, e.target.value)}
-                  readOnly={isReadOnly || (selectedForm?.status && selectedForm.status !== "pending")}
+                  readOnly={
+                    isReadOnly ||
+                    (selectedForm?.status && selectedForm.status !== "pending")
+                  }
                 />
               </div>
             );
@@ -132,9 +164,14 @@ const handleGenerate = async () => {
 
           <button
             type="submit"
-            disabled={loading || isReadOnly || (selectedForm?.status && selectedForm.status !== "pending")}
+            disabled={
+              loading ||
+              isReadOnly ||
+              (selectedForm?.status && selectedForm.status !== "pending")
+            }
           >
-            {isReadOnly || (selectedForm?.status && selectedForm.status !== "pending")
+            {isReadOnly ||
+            (selectedForm?.status && selectedForm.status !== "pending")
               ? "Locked"
               : loading
               ? "Saving..."
@@ -170,7 +207,11 @@ const handleGenerate = async () => {
                 <td>{s.filename.split("_")[0]}</td>
                 <td>{s.filledBy || "?"}</td>
                 <td>{s.status || "pending"}</td>
-                <td>{s.timestamp?.toDate ? s.timestamp.toDate().toLocaleString() : ""}</td>
+                <td>
+                  {s.timestamp?.toDate
+                    ? s.timestamp.toDate().toLocaleString()
+                    : ""}
+                </td>
               </tr>
             ))}
           </tbody>

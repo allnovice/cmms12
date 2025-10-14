@@ -42,39 +42,40 @@ export default function RequestsPage() {
   };
 
   // generate filled document
-  const handleGenerate = async () => {
-    if (!selectedForm) return;
+// generate filled document
+const handleGenerate = async () => {
+  if (!selectedForm) return;
 
-    const idx = selectedForm.filename.indexOf(".xlsx");
-    if (idx === -1) return alert("Invalid file name");
-    const originalTemplate = selectedForm.filename.slice(0, idx + 5);
+  const idx = selectedForm.filename.indexOf(".xlsx");
+  if (idx === -1) return alert("Invalid file name");
+  const originalTemplate = selectedForm.filename.slice(0, idx + 5);
 
-    try {
-      const res = await fetch(`${SERVER_URL}/fill`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          filename: originalTemplate,
-          data: formValues,
-        }),
-      });
+  try {
+    const res = await fetch(`${SERVER_URL}/fill`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filename: originalTemplate,
+        data: formValues,
+      }),
+    });
 
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("Generate failed:", text);
-        return alert("Failed to generate document");
-      }
-
-      const result = await res.json();
-      const link = document.createElement("a");
-      link.href = `${SERVER_URL}${result.url}`;
-      link.download = result.url.split("/").pop();
-      link.click();
-    } catch (err) {
-      console.error("Generate error:", err);
-      alert("Failed to generate document");
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Generate failed:", text);
+      return alert("Failed to generate document");
     }
-  };
+
+    const result = await res.json();
+    const link = document.createElement("a");
+    link.href = `${SERVER_URL}${result.url}`;
+    link.download = result.url.split("/").pop();
+    link.click();
+  } catch (err) {
+    console.error("Server unreachable or network error:", err);
+    alert("Server is down or unreachable. Please try again later.");
+  }
+};
 
   // check if all signatures are filled
   const allSignaturesComplete = () =>
