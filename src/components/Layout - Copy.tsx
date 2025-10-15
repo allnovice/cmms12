@@ -14,29 +14,36 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<any[]>([]);
 
   // Fetch notifications for the user's signatoryLevel
-  useEffect(() => {
-    if (!user?.signatoryLevel || user.signatoryLevel < 2) return;
+useEffect(() => {
+  if (!user?.signatoryLevel || user.signatoryLevel < 2) return;
 
-    const fetchNotifications = async () => {
-      try {
-        const res = await fetch(`http://localhost:3002/notifications/${user.signatoryLevel}`);
-        const data = await res.json();
-        // Filter notifications that match the user's level
-        const filtered = (data.pending || []).filter((f: any) => {
-          const lvl = parseInt(f.signatureField.replace("signature", "")) || 1;
-          return lvl >= 2 && lvl <= user.signatoryLevel;
-        });
-        setNotifications(filtered);
-      } catch (err) {
-        console.error("Failed to fetch notifications:", err);
-      }
-    };
+  let active = true;
 
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // refresh every 30s
-    return () => clearInterval(interval);
-  }, [user]);
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SERV_URL2}/notifications/${user.signatoryLevel}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!active) return;
 
+      const filtered = (data.pending || []).filter((f: any) => {
+        const lvl = parseInt(f.signatureField.replace("signature", "")) || 1;
+        return lvl >= 2 && lvl <= user.signatoryLevel;
+      });
+      setNotifications(filtered);
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+      if (active) setNotifications([]); // safe default
+    }
+  };
+
+  fetchNotifications();
+  const interval = setInterval(fetchNotifications, 30000);
+  return () => {
+    active = false;
+    clearInterval(interval);
+  };
+}, [user]);
   const handleLogout = async () => {
     await signOut(auth);
     router.replace("/login");

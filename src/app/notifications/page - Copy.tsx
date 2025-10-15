@@ -23,7 +23,7 @@ export default function NotificationsPage() {
 
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`http://localhost:3002/notifications/${user.signatoryLevel}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_SERV_URL2}/notifications/${user.signatoryLevel}`);
         const data = await res.json();
         setNotifications(data.pending || []);
       } catch (err) {

@@ -4,7 +4,15 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase";
-import { FiHome, FiUsers, FiBox, FiClipboard, FiSettings, FiBell, FiLogOut } from "react-icons/fi";
+import {
+  FiHome,
+  FiUsers,
+  FiBox,
+  FiClipboard,
+  FiSettings,
+  FiBell,
+  FiLogOut,
+} from "react-icons/fi";
 import { useAuth } from "@/context/AuthContext";
 import "@/app/globals.css";
 
@@ -13,28 +21,46 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
 
-  // Fetch notifications for the user's signatoryLevel
+  // ✅ Fetch notifications safely
   useEffect(() => {
     if (!user?.signatoryLevel || user.signatoryLevel < 2) return;
+    if (!process.env.NEXT_PUBLIC_SERV_URL2) {
+      console.warn("NEXT_PUBLIC_SERV_URL2 missing");
+      return;
+    }
+
+    let active = true;
 
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_SERV_URL2}/notifications/${user.signatoryLevel}`);
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_SERV_URL2}/notifications/${user.signatoryLevel}`,
+          { signal: AbortSignal.timeout(5000) } // timeout after 5s
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
         const data = await res.json();
-        // Filter notifications that match the user's level
+        if (!active) return;
+
         const filtered = (data.pending || []).filter((f: any) => {
-          const lvl = parseInt(f.signatureField.replace("signature", "")) || 1;
+          const lvl =
+            parseInt(f.signatureField.replace("signature", "")) || 1;
           return lvl >= 2 && lvl <= user.signatoryLevel;
         });
+
         setNotifications(filtered);
-      } catch (err) {
-        console.error("Failed to fetch notifications:", err);
+      } catch (err: any) {
+        console.warn("Server unreachable or fetch failed:", err.message);
+        if (active) setNotifications([]); // fallback safe state
       }
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // refresh every 30s
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, [user]);
 
   const handleLogout = async () => {
@@ -52,7 +78,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { icon: <FiBox />, path: "/assets" },
     { icon: <FiClipboard />, path: "/requests" },
     { icon: <FiSettings />, path: "/settings" },
-    { icon: <FiBell />, action: handleNotifications }, // notification icon
+    { icon: <FiBell />, action: handleNotifications },
     { icon: <FiLogOut />, action: handleLogout },
   ];
 
@@ -65,7 +91,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   if (loading) return <p>Loading...</p>;
   if (!user) return <p>Redirecting...</p>;
 
-
   return (
     <div className="layout-container">
       <header className="layout-header">
@@ -74,7 +99,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <button
               key={idx}
               className="nav-icon"
-              onClick={() => (btn.path ? router.push(btn.path) : btn.action?.())}
+              onClick={() =>
+                btn.path ? router.push(btn.path) : btn.action?.()
+              }
               style={{ position: "relative" }}
             >
               {btn.icon}

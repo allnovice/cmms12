@@ -16,8 +16,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     };
 
-    checkServer(`${process.env.NEXT_PUBLIC_SERVER_URL}/`, setServer1);
-checkServer(`${process.env.NEXT_PUBLIC_SERV_URL2}/`, setServer2);
+    checkServer(`${process.env.NEXT_PUBLIC_SERVER_URL}/`, setServer2);
+checkServer(`${process.env.NEXT_PUBLIC_SERV_URL2}/`, setServer1);
 
 }, []);
 
