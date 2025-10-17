@@ -9,17 +9,40 @@ import L from "leaflet";
 import { FiMapPin } from "react-icons/fi";
 import { renderToStaticMarkup } from "react-dom/server";
 
-// Dynamic Leaflet components
-const MapContainer = dynamic(() => import("react-leaflet").then(m => m.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import("react-leaflet").then(m => m.TileLayer), { ssr: false });
-const Marker = dynamic(() => import("react-leaflet").then(m => m.Marker), { ssr: false });
-const Popup = dynamic(() => import("react-leaflet").then(m => m.Popup), { ssr: false });
+// ✅ use direct imports for dynamic components
+const MapContainer: any = dynamic(
+  () => import("react-leaflet").then(mod => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer: any = dynamic(
+  () => import("react-leaflet").then(mod => mod.TileLayer),
+  { ssr: false }
+);
+const Marker: any = dynamic(
+  () => import("react-leaflet").then(mod => mod.Marker),
+  { ssr: false }
+);
+const Popup: any = dynamic(
+  () => import("react-leaflet").then(mod => mod.Popup),
+  { ssr: false }
+);
+
+const center: [number, number] = [14.5995, 120.9842];
+
+type Asset = {
+  id: string;
+  assetName?: string;
+  latitude?: number;
+  longitude?: number;
+  unit?: string;
+  status?: string;
+  location?: string;
+  [key: string]: any;
+};
 
 export default function MapViewPage() {
-  const [assets, setAssets] = useState<any[]>([]);
-  const center = { lat: 14.5995, lng: 120.9842 };
+  const [assets, setAssets] = useState<Asset[]>([]);
 
-  // Create a divIcon with React Icon
   const customIcon = L.divIcon({
     html: renderToStaticMarkup(<FiMapPin size={28} color="red" />),
     className: "",
@@ -33,8 +56,9 @@ export default function MapViewPage() {
       try {
         const snapshot = await getDocs(collection(db, "assets"));
         const data = snapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .map(doc => ({ ...(doc.data() as Asset), id: doc.id }))
           .filter(a => a.latitude && a.longitude);
+
         setAssets(data);
       } catch (err) {
         console.error("Error fetching assets:", err);
@@ -45,20 +69,21 @@ export default function MapViewPage() {
 
   return (
     <div style={{ height: "80vh", width: "100%" }}>
-      <MapContainer center={center} zoom={12} style={{ height: "100%", width: "100%" }}>
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
-        {assets.map(a => (
-          <Marker key={a.id} position={[a.latitude, a.longitude]} icon={customIcon}>
-            <Popup>
-              <strong>{a.assetName}</strong>
-              {a.unit && <div>{a.unit}</div>}
-              {a.status && <div>Status: {a.status}</div>}
-              {a.location && <div>Location: {a.location}</div>}
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+      {typeof window !== "undefined" && (
+        <MapContainer center={center} zoom={12} style={{ height: "100%", width: "100%" }}>
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          {assets.map(a => (
+            <Marker key={a.id} position={[a.latitude!, a.longitude!]} icon={customIcon}>
+              <Popup>
+                <strong>{a.assetName}</strong>
+                {a.unit && <div>{a.unit}</div>}
+                {a.status && <div>Status: {a.status}</div>}
+                {a.location && <div>Location: {a.location}</div>}
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      )}
     </div>
   );
 }
