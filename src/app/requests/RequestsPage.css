@@ -1,11 +1,16 @@
-/* page.css — styles only the content inside dashboard-card */
-
-.dashboard-card h2 {
+/* Page-specific heading styles */
+.page-content h2 {
   margin-bottom: 0.75rem;
   font-size: 1.3rem;
   font-weight: 600;
-  border-bottom: 1px solid rgba(128,128,128,0.2);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
   padding-bottom: 0.3rem;
+}
+
+.page-content h3 {
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 /* Templates list */
@@ -19,9 +24,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(128,128,128,0.1);
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
+  background: rgba(128, 128, 128, 0.1);
 }
 
 /* Forms */
@@ -40,64 +45,65 @@ form label {
 form input {
   padding: 0.4rem 0.6rem;
   border-radius: 6px;
-  border: 1px solid rgba(128,128,128,0.4);
-  background: var(--card-bg);
-  color: var(--text-color);
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  /* remove background & color to inherit globals */
 }
 
 form input:focus {
   outline: none;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59,130,246,0.3);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
 }
 
 /* Buttons */
-button {
+form button,
+.templates-list button {
   padding: 0.45rem 0.9rem;
   border-radius: 6px;
   border: none;
   cursor: pointer;
-  background-color: #3b82f6;
-  color: #fff;
   font-weight: 600;
   transition: background-color 0.2s, opacity 0.2s;
 }
 
-button:hover {
-  background-color: #2563eb;
+form button:hover,
+.templates-list button:hover {
+  opacity: 0.85;
 }
 
-button:disabled {
+form button:disabled,
+.templates-list button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-/* Table */
-table {
+/* Submissions table */
+.submissions-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
   font-size: 0.9rem;
 }
 
-th, td {
+.submissions-table th,
+.submissions-table td {
   padding: 0.5rem;
-  border-bottom: 1px solid rgba(128,128,128,0.3);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.3);
   text-align: left;
 }
 
-th {
+.submissions-table th {
   font-weight: 600;
-  background: rgba(128,128,128,0.15);
+  background: rgba(128, 128, 128, 0.15);
 }
 
-tr:hover {
-  background: rgba(59,130,246,0.1);
+.submissions-table tr:hover {
+  background: rgba(59, 130, 246, 0.1);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  table {
+  .submissions-table {
     font-size: 0.85rem;
   }
 }

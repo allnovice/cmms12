@@ -14,6 +14,17 @@ const users = ["Alice", "Bob", "Charlie", "David", "Eva"];
 
 const NUM_ASSETS = 20;
 
+// Metro Manila bounds
+const LAT_MIN = 14.50;
+const LAT_MAX = 14.70;
+const LNG_MIN = 120.95;
+const LNG_MAX = 121.10;
+
+// Helper to get random number in range
+function randomInRange(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
 async function seedAssets() {
   for (let i = 0; i < NUM_ASSETS; i++) {
     const asset = {
@@ -24,10 +35,12 @@ async function seedAssets() {
       assignedTo: Math.random() > 0.5 ? users[Math.floor(Math.random() * users.length)] : "",
       status: statuses[Math.floor(Math.random() * statuses.length)],
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      latitude: parseFloat(randomInRange(LAT_MIN, LAT_MAX).toFixed(6)),
+      longitude: parseFloat(randomInRange(LNG_MIN, LNG_MAX).toFixed(6)),
     };
 
     await db.collection("assets").add(asset);
-    console.log("Added asset:", asset.assetName);
+    console.log("Added asset:", asset.assetName, asset.latitude, asset.longitude);
   }
   console.log("Seeding complete!");
 }
