@@ -56,7 +56,7 @@
 /* Dashboard card for content */
 .dashboard-card {
   width: 100%;
-  max-width: 900px;
+  max-width: 1400px;
   background-color: var(--card-bg);
   color: var(--text-color);
   border-radius: 10px;
