@@ -26,37 +26,38 @@ export default function MapViewPage() {
 
   const [assets, setAssets] = useState<Asset[]>([]);
   const [userPin, setUserPin] = useState<{ latitude: number; longitude: number; timestamp: number } | null>(null);
+  const [allLatestPins, setAllLatestPins] = useState<{ uid: string; latitude: number; longitude: number }[]>([]);
   const [loadingPin, setLoadingPin] = useState(false);
 
-  // Initialize map (client only)
+  // Initialize map
   useEffect(() => {
     if (!mapContainer.current || typeof window === "undefined") return;
     if (mapRef.current) return;
 
     mapRef.current = new maplibregl.Map({
-  container: mapContainer.current,
-  style: {
-    version: 8,
-    sources: {
-      osm: {
-        type: "raster",
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-        tileSize: 256,
+      container: mapContainer.current,
+      style: {
+        version: 8,
+        sources: {
+          osm: {
+            type: "raster",
+            tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+            tileSize: 256,
+          },
+        },
+        layers: [
+          {
+            id: "osm",
+            type: "raster",
+            source: "osm",
+            minzoom: 0,
+            maxzoom: 19,
+          },
+        ],
       },
-    },
-    layers: [
-      {
-        id: "osm",
-        type: "raster",
-        source: "osm",
-        minzoom: 0,
-        maxzoom: 19,
-      },
-    ],
-  },
-  center: DEFAULT_CENTER,
-  zoom: DEFAULT_ZOOM,
-});
+      center: DEFAULT_CENTER,
+      zoom: DEFAULT_ZOOM,
+    });
 
     mapRef.current.addControl(new maplibregl.NavigationControl());
   }, []);
@@ -77,7 +78,7 @@ export default function MapViewPage() {
     fetchAssets();
   }, []);
 
-  // Fetch user pin
+  // Fetch user's latest pin
   useEffect(() => {
     const fetchUserPin = async () => {
       if (!auth.currentUser) return;
@@ -90,7 +91,37 @@ export default function MapViewPage() {
     fetchUserPin();
   }, []);
 
-  // Update markers whenever assets or userPin change
+  // Fetch all users' latest pins
+  useEffect(() => {
+    const fetchAllLatestPins = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "allUsersPins"));
+        const pins: any[] = snapshot.docs.map(doc => doc.data());
+
+        // Reduce to latest per user
+        const latestMap: Record<string, typeof pins[0]> = {};
+        pins.forEach(p => {
+          const ts = p.timestamp?.toMillis ? p.timestamp.toMillis() : 0;
+          if (!latestMap[p.uid] || ts > (latestMap[p.uid].timestamp?.toMillis() || 0)) {
+            latestMap[p.uid] = p;
+          }
+        });
+
+        setAllLatestPins(
+          Object.values(latestMap).map(p => ({
+            uid: p.uid,
+            latitude: p.latitude,
+            longitude: p.longitude,
+          }))
+        );
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchAllLatestPins();
+  }, []);
+
+  // Render markers
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -98,7 +129,7 @@ export default function MapViewPage() {
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
-    // Add asset markers
+    // Assets
     assets.forEach(a => {
       const el = document.createElement("div");
       el.style.background = "red";
@@ -121,7 +152,7 @@ export default function MapViewPage() {
       markersRef.current.push(marker);
     });
 
-    // Add user pin
+    // User pin
     if (userPin) {
       const el = document.createElement("div");
       el.style.background = "blue";
@@ -136,9 +167,25 @@ export default function MapViewPage() {
 
       markersRef.current.push(marker);
     }
-  }, [assets, userPin]);
 
-  // Handle pin button
+    // All users' latest pins
+    allLatestPins.forEach(p => {
+      const el = document.createElement("div");
+      el.style.background = "blue";
+      el.style.width = "20px";
+      el.style.height = "20px";
+      el.style.borderRadius = "50%";
+
+      const marker = new maplibregl.Marker(el)
+        .setLngLat([p.longitude, p.latitude])
+        .setPopup(new maplibregl.Popup({ offset: 25 }).setText(`User: ${p.uid}`))
+        .addTo(mapRef.current!);
+
+      markersRef.current.push(marker);
+    });
+  }, [assets, userPin, allLatestPins]);
+
+  // Pin location handler
   const handlePinLocation = () => {
     if (!auth.currentUser) return alert("Not logged in");
 
@@ -159,12 +206,22 @@ export default function MapViewPage() {
       async pos => {
         const { latitude, longitude } = pos.coords;
         try {
+          // Save in user's latest pin
           await setDoc(doc(db, "userPins", auth.currentUser!.uid), {
             uid: auth.currentUser!.uid,
             latitude,
             longitude,
             timestamp: serverTimestamp(),
           });
+
+          // Save in allUsersPins history
+          await setDoc(doc(collection(db, "allUsersPins")), {
+            uid: auth.currentUser!.uid,
+            latitude,
+            longitude,
+            timestamp: serverTimestamp(),
+          });
+
           setUserPin({ latitude, longitude, timestamp: Date.now() });
           alert("Your location has been pinned!");
         } catch (err) {
