@@ -1,47 +1,42 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { auth, db } from "@/firebase";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, collection, serverTimestamp } from "firebase/firestore";
+import { UserPin } from "./types";
 
-export default function PinButton({ onUpdate }: { onUpdate: (lat: number, lng: number) => void }) {
+interface Props {
+  userPin: UserPin | null;
+  onUpdate: (pin: UserPin) => void;
+}
+
+export default function PinButton({ userPin, onUpdate }: Props) {
   const [loading, setLoading] = useState(false);
-  const [lastPinTime, setLastPinTime] = useState<number>(0);
-
-  useEffect(() => {
-    const fetchPin = async () => {
-      if (!auth.currentUser) return;
-      const snap = await getDoc(doc(db, "userPins", auth.currentUser.uid));
-      if (snap.exists()) setLastPinTime(snap.data().timestamp?.toMillis() || 0);
-    };
-    fetchPin();
-  }, []);
 
   const handlePin = () => {
     if (!auth.currentUser) return alert("Not logged in");
 
     const now = Date.now();
-    if (lastPinTime && now - lastPinTime < 30 * 60 * 1000) {
-      const mins = Math.ceil((30 * 60 * 1000 - (now - lastPinTime)) / 60000);
-      return alert(`You can pin again in ${mins} minutes`);
+    if (userPin) {
+      const diff = now - userPin.timestamp;
+      if (diff < 30 * 60 * 1000) {
+        const minsLeft = Math.ceil((30 * 60 * 1000 - diff) / 60000);
+        return alert(`You can pin again in ${minsLeft} minutes`);
+      }
     }
 
     if (!navigator.geolocation) return alert("Geolocation not supported");
-    setLoading(true);
 
+    setLoading(true);
     navigator.geolocation.getCurrentPosition(
-      async ({ coords }) => {
-        const { latitude, longitude } = coords;
+      async pos => {
+        const { latitude, longitude } = pos.coords;
         try {
-          await setDoc(doc(db, "userPins", auth.currentUser!.uid), {
-            uid: auth.currentUser!.uid,
-            latitude,
-            longitude,
-            timestamp: serverTimestamp(),
-          });
-          setLastPinTime(Date.now());
-          onUpdate(latitude, longitude);
-          alert("Location pinned!");
+          const pinData = { uid: auth.currentUser!.uid, latitude, longitude, timestamp: serverTimestamp() };
+          await setDoc(doc(db, "userPins", auth.currentUser!.uid), pinData);
+          await setDoc(doc(collection(db, "allUsersPins")), pinData);
+          onUpdate({ ...pinData, timestamp: Date.now() });
+          alert("Your location has been pinned!");
         } catch (err) {
           console.error(err);
           alert("Failed to pin location");
@@ -49,7 +44,7 @@ export default function PinButton({ onUpdate }: { onUpdate: (lat: number, lng: n
           setLoading(false);
         }
       },
-      (err) => {
+      err => {
         console.error(err);
         alert("Failed to get location");
         setLoading(false);
@@ -58,7 +53,7 @@ export default function PinButton({ onUpdate }: { onUpdate: (lat: number, lng: n
   };
 
   return (
-    <div style={{ textAlign: "center", marginTop: 10 }}>
+    <div style={{ marginTop: 10, textAlign: "center" }}>
       <button onClick={handlePin} disabled={loading}>
         {loading ? "Pinning..." : "Pin My Location"}
       </button>

@@ -14,6 +14,7 @@ type UserData = {
   contact?: string;
   employeeNumber?: string;
   division?: string;
+  pinColor?: string; // new
 };
 
 export default function SettingsPage() {
@@ -24,6 +25,7 @@ export default function SettingsPage() {
   const [contact, setContact] = useState("");
   const [employeeNumber, setEmployeeNumber] = useState("");
   const [division, setDivision] = useState("");
+  const [pinColor, setPinColor] = useState(userData?.pinColor || "#0000ff"); // default blue
   const [loading, setLoading] = useState(false);
   const [signatureBlob, setSignatureBlob] = useState<Blob | null>(null);
 
@@ -44,6 +46,7 @@ export default function SettingsPage() {
         setContact(data.contact || "");
         setEmployeeNumber(data.employeeNumber || "");
         setDivision(data.division || "");
+        setPinColor(data.pinColor || "#0000ff");
       }
     };
     fetchUser();
@@ -85,6 +88,7 @@ export default function SettingsPage() {
         employeeNumber,
         division,
         signature: sigUrl,
+        pinColor,
       });
 
       setUserData((prev) => ({
@@ -96,6 +100,7 @@ export default function SettingsPage() {
         employeeNumber,
         division,
         signature: sigUrl,
+        pinColor,
       }));
 
       alert("Settings saved successfully!");
@@ -174,6 +179,15 @@ export default function SettingsPage() {
           onChange={(e) => setDivision(e.target.value)}
         />
       </div>
+
+<div>
+  <label>Pin Color</label>
+  <input
+    type="color"
+    value={pinColor}
+    onChange={(e) => setPinColor(e.target.value)}
+  />
+</div>
 
       <div>
         <label>Signature</label>

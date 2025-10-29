@@ -1,15 +1,12 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { collection, doc, getDocs, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db, auth } from "@/firebase";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { collection, getDocs, doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
-import { db, auth } from "@/firebase";
 
-const DEFAULT_CENTER: [number, number] = [120.9842, 14.5995]; // [lng, lat] for MapLibre
-const DEFAULT_ZOOM = 12;
-
-export type Asset = {
+type Asset = {
   id: string;
   assetName?: string;
   latitude?: number;
@@ -19,41 +16,40 @@ export type Asset = {
   location?: string;
 };
 
+type UserPin = {
+  uid: string;
+  latitude: number;
+  longitude: number;
+  pinColor?: string;
+  timestamp: number;
+};
+
+const DEFAULT_CENTER: [number, number] = [120.9842, 14.5995];
+const DEFAULT_ZOOM = 12;
+const PIN_INTERVAL = 30 * 60 * 1000; // 30 minutes
+
 export default function MapViewPage() {
-  const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [userPin, setUserPin] = useState<{ latitude: number; longitude: number; timestamp: number } | null>(null);
-  const [allLatestPins, setAllLatestPins] = useState<{ uid: string; latitude: number; longitude: number }[]>([]);
-  const [loadingPin, setLoadingPin] = useState(false);
+  const [userPin, setUserPin] = useState<UserPin | null>(null);
+  const [allPins, setAllPins] = useState<UserPin[]>([]);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize map
+  // --- Initialize Map ---
   useEffect(() => {
-    if (!mapContainer.current || typeof window === "undefined") return;
-    if (mapRef.current) return;
+    if (!containerRef.current || mapRef.current) return;
 
     mapRef.current = new maplibregl.Map({
-      container: mapContainer.current,
+      container: containerRef.current,
       style: {
         version: 8,
         sources: {
-          osm: {
-            type: "raster",
-            tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-            tileSize: 256,
-          },
+          osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256 },
         },
-        layers: [
-          {
-            id: "osm",
-            type: "raster",
-            source: "osm",
-            minzoom: 0,
-            maxzoom: 19,
-          },
-        ],
+        layers: [{ id: "osm", type: "raster", source: "osm", minzoom: 0, maxzoom: 19 }],
       },
       center: DEFAULT_CENTER,
       zoom: DEFAULT_ZOOM,
@@ -62,191 +58,129 @@ export default function MapViewPage() {
     mapRef.current.addControl(new maplibregl.NavigationControl());
   }, []);
 
-  // Fetch assets
+  // --- Fetch Assets ---
   useEffect(() => {
     const fetchAssets = async () => {
-      try {
-        const snapshot = await getDocs(collection(db, "assets"));
-        const data = snapshot.docs
-          .map(doc => ({ ...(doc.data() as Asset), id: doc.id }))
-          .filter(a => a.latitude && a.longitude);
-        setAssets(data);
-      } catch (err) {
-        console.error(err);
-      }
+      const snap = await getDocs(collection(db, "assets"));
+      const data = snap.docs
+        .map(d => ({ ...(d.data() as Asset), id: d.id }))
+        .filter(a => a.latitude && a.longitude);
+      setAssets(data);
     };
     fetchAssets();
   }, []);
 
-  // Fetch user's latest pin
+  // --- Fetch all users pins ---
   useEffect(() => {
-    const fetchUserPin = async () => {
-      if (!auth.currentUser) return;
-      const snap = await getDoc(doc(db, "userPins", auth.currentUser.uid));
-      if (snap.exists()) {
-        const data = snap.data() as any;
-        setUserPin({ latitude: data.latitude, longitude: data.longitude, timestamp: data.timestamp?.toMillis() || 0 });
-      }
-    };
-    fetchUserPin();
-  }, []);
-
-  // Fetch all users' latest pins
-  useEffect(() => {
-    const fetchAllLatestPins = async () => {
-      try {
-        const snapshot = await getDocs(collection(db, "allUsersPins"));
-        const pins: any[] = snapshot.docs.map(doc => doc.data());
-
-        // Reduce to latest per user
-        const latestMap: Record<string, typeof pins[0]> = {};
-        pins.forEach(p => {
-          const ts = p.timestamp?.toMillis ? p.timestamp.toMillis() : 0;
-          if (!latestMap[p.uid] || ts > (latestMap[p.uid].timestamp?.toMillis() || 0)) {
-            latestMap[p.uid] = p;
-          }
+    const fetchAllPins = async () => {
+      const snap = await getDocs(collection(db, "userPins"));
+      const pins: UserPin[] = [];
+      for (const docSnap of snap.docs) {
+        const data = docSnap.data() as any;
+        pins.push({
+          uid: data.uid,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          pinColor: data.pinColor || "#00ffff",
+          timestamp: data.timestamp?.toMillis() || Date.now(),
         });
-
-        setAllLatestPins(
-          Object.values(latestMap).map(p => ({
-            uid: p.uid,
-            latitude: p.latitude,
-            longitude: p.longitude,
-          }))
-        );
-      } catch (err) {
-        console.error(err);
       }
+      setAllPins(pins);
     };
-    fetchAllLatestPins();
+
+    fetchAllPins();
   }, []);
 
-  // Render markers
+  // --- Render markers ---
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Remove old markers
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
     // Assets
     assets.forEach(a => {
       const el = document.createElement("div");
-      el.style.background = "red";
-      el.style.width = "20px";
-      el.style.height = "20px";
-      el.style.borderRadius = "50%";
-
-      const marker = new maplibregl.Marker(el)
+      el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" fill="red" stroke="#fff" stroke-width="2"/>
+      </svg>`;
+      const marker = new maplibregl.Marker({ element: el })
         .setLngLat([a.longitude!, a.latitude!])
-        .setPopup(
-          new maplibregl.Popup({ offset: 25 }).setHTML(`
-            <strong>${a.assetName}</strong>
-            ${a.unit ? `<div>${a.unit}</div>` : ""}
-            ${a.status ? `<div>Status: ${a.status}</div>` : ""}
-            ${a.location ? `<div>Location: ${a.location}</div>` : ""}
-          `)
-        )
+        .setPopup(new maplibregl.Popup({ offset: 25 }).setHTML(`
+          <strong>${a.assetName}</strong>
+          ${a.unit ? `<div>${a.unit}</div>` : ""}
+          ${a.status ? `<div>Status: ${a.status}</div>` : ""}
+          ${a.location ? `<div>Location: ${a.location}</div>` : ""}
+        `))
         .addTo(mapRef.current!);
-
       markersRef.current.push(marker);
     });
 
-    // User pin
-    if (userPin) {
+    // All users pins
+    allPins.forEach(p => {
       const el = document.createElement("div");
-      el.style.background = "blue";
-      el.style.width = "20px";
-      el.style.height = "20px";
-      el.style.borderRadius = "50%";
-
-      const marker = new maplibregl.Marker(el)
-        .setLngLat([userPin.longitude, userPin.latitude])
-        .setPopup(new maplibregl.Popup({ offset: 25 }).setText("Your location"))
-        .addTo(mapRef.current!);
-
-      markersRef.current.push(marker);
-    }
-
-    // All users' latest pins
-    allLatestPins.forEach(p => {
-      const el = document.createElement("div");
-      el.style.background = "blue";
-      el.style.width = "20px";
-      el.style.height = "20px";
-      el.style.borderRadius = "50%";
-
-      const marker = new maplibregl.Marker(el)
+      el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" fill="${p.pinColor || "#0000ff"}" stroke="#fff" stroke-width="2"/>
+      </svg>`;
+      const marker = new maplibregl.Marker({ element: el })
         .setLngLat([p.longitude, p.latitude])
         .setPopup(new maplibregl.Popup({ offset: 25 }).setText(`User: ${p.uid}`))
         .addTo(mapRef.current!);
-
       markersRef.current.push(marker);
     });
-  }, [assets, userPin, allLatestPins]);
+  }, [assets, allPins]);
 
-  // Pin location handler
-  const handlePinLocation = () => {
-    if (!auth.currentUser) return alert("Not logged in");
+  // --- Auto pin logic ---
+  useEffect(() => {
+    if (!auth.currentUser || !navigator.geolocation) return;
 
-    if (userPin) {
-      const now = Date.now();
-      const diff = now - userPin.timestamp;
-      const min30 = 30 * 60 * 1000;
-      if (diff < min30) {
-        const minsLeft = Math.ceil((min30 - diff) / 60000);
-        return alert(`You can pin again in ${minsLeft} minutes`);
-      }
-    }
+    const schedulePin = async () => {
+      try {
+        // Get last pin timestamp
+        const snap = await getDoc(doc(db, "userPins", auth.currentUser!.uid));
+        const lastTimestamp = snap.exists() ? snap.data()?.timestamp?.toMillis() : 0;
+        const now = Date.now();
+        const timeSinceLast = now - (lastTimestamp || 0);
 
-    if (!navigator.geolocation) return alert("Geolocation not supported");
+        const pinUser = async () => {
+          navigator.geolocation.getCurrentPosition(async pos => {
+            const { latitude, longitude } = pos.coords;
+            const colorSnap = await getDoc(doc(db, "users", auth.currentUser!.uid));
+            const color = colorSnap.exists() ? colorSnap.data()?.pinColor || "#ff0000" : "#ff0000";
 
-    setLoadingPin(true);
-    navigator.geolocation.getCurrentPosition(
-      async pos => {
-        const { latitude, longitude } = pos.coords;
-        try {
-          // Save in user's latest pin
-          await setDoc(doc(db, "userPins", auth.currentUser!.uid), {
-            uid: auth.currentUser!.uid,
-            latitude,
-            longitude,
-            timestamp: serverTimestamp(),
+            const pinData = { uid: auth.currentUser!.uid, latitude, longitude, pinColor: color, timestamp: serverTimestamp() };
+            await setDoc(doc(db, "userPins", auth.currentUser!.uid), pinData);
+            setUserPin({ ...pinData, timestamp: Date.now() });
+            setAllPins(prev => {
+              const filtered = prev.filter(p => p.uid !== auth.currentUser!.uid);
+              return [...filtered, { ...pinData, timestamp: Date.now() }];
+            });
           });
+        };
 
-          // Save in allUsersPins history
-          await setDoc(doc(collection(db, "allUsersPins")), {
-            uid: auth.currentUser!.uid,
-            latitude,
-            longitude,
-            timestamp: serverTimestamp(),
-          });
-
-          setUserPin({ latitude, longitude, timestamp: Date.now() });
-          alert("Your location has been pinned!");
-        } catch (err) {
-          console.error(err);
-          alert("Failed to pin location");
-        } finally {
-          setLoadingPin(false);
+        if (timeSinceLast >= PIN_INTERVAL) {
+          // Pin immediately
+          pinUser();
+          timeoutRef.current = setTimeout(schedulePin, PIN_INTERVAL);
+        } else {
+          // Schedule next pin after remaining time
+          timeoutRef.current = setTimeout(schedulePin, PIN_INTERVAL - timeSinceLast);
         }
-      },
-      err => {
-        console.error(err);
-        alert("Failed to get location");
-        setLoadingPin(false);
+      } catch (err) {
+        console.error("Auto-pin error:", err);
       }
-    );
-  };
+    };
+
+    schedulePin();
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   return (
     <div>
-      <div ref={mapContainer} style={{ height: "70vh", width: "100%" }} />
-      <div style={{ marginTop: 10, textAlign: "center" }}>
-        <button onClick={handlePinLocation} disabled={loadingPin}>
-          {loadingPin ? "Pinning..." : "Pin My Location"}
-        </button>
-      </div>
+      <div ref={containerRef} style={{ height: "70vh", width: "100%" }} />
     </div>
   );
 }
