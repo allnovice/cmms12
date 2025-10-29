@@ -185,3 +185,10 @@ git push origin main
 # Before running scripts in `scrpt/`, install dependencies:
 cd scrpt
 npm install
+
+TODO
++timestamp caching
++chatbot>quick tickt
++forms
++dashbrds
+

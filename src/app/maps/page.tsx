@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { collection, doc, getDocs, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, setDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
 import { db, auth } from "@/firebase";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -92,43 +92,91 @@ export default function MapViewPage() {
   }, []);
 
   // --- Render markers ---
-  useEffect(() => {
-    if (!mapRef.current) return;
+// --- Render markers ---
+useEffect(() => {
+  const user = auth.currentUser;
+  if (!mapRef.current || !user) return; // ✅ safely exit if no user
 
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
+  const uid = user.uid; // ✅ TypeScript knows it's non-null now
 
-    // Assets
-    assets.forEach(a => {
-      const el = document.createElement("div");
-      el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" fill="red" stroke="#fff" stroke-width="2"/>
-      </svg>`;
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([a.longitude!, a.latitude!])
-        .setPopup(new maplibregl.Popup({ offset: 25 }).setHTML(`
-          <strong>${a.assetName}</strong>
-          ${a.unit ? `<div>${a.unit}</div>` : ""}
-          ${a.status ? `<div>Status: ${a.status}</div>` : ""}
-          ${a.location ? `<div>Location: ${a.location}</div>` : ""}
-        `))
-        .addTo(mapRef.current!);
-      markersRef.current.push(marker);
+  // Clear previous markers
+  markersRef.current.forEach(m => m.remove());
+  markersRef.current = [];
+
+  // --- Render Assets ---
+  assets.forEach(a => {
+    const el = document.createElement("div");
+    el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" fill="red" stroke="#fff" stroke-width="2"/>
+    </svg>`;
+    const marker = new maplibregl.Marker({ element: el })
+      .setLngLat([a.longitude!, a.latitude!])
+      .setPopup(new maplibregl.Popup({ offset: 25 }).setHTML(`
+        <strong>${a.assetName}</strong>
+        ${a.unit ? `<div>${a.unit}</div>` : ""}
+        ${a.status ? `<div>Status: ${a.status}</div>` : ""}
+        ${a.location ? `<div>Location: ${a.location}</div>` : ""}
+      `))
+      .addTo(mapRef.current!);
+    markersRef.current.push(marker);
+  });
+
+  // --- Render All Users Pins ---
+  allPins.forEach(p => {
+    const el = document.createElement("div");
+    el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" fill="${p.pinColor || "#0000ff"}" stroke="#fff" stroke-width="2"/>
+    </svg>`;
+    const marker = new maplibregl.Marker({ element: el })
+      .setLngLat([p.longitude, p.latitude])
+      .setPopup(new maplibregl.Popup({ offset: 25 }).setText(`User: ${p.uid}`))
+      .addTo(mapRef.current!);
+    markersRef.current.push(marker);
+  });
+
+  // --- Recenter on current user’s pin ---
+  const myPin = allPins.find(p => p.uid === uid);
+  if (myPin) {
+    mapRef.current.flyTo({
+      center: [myPin.longitude, myPin.latitude],
+      zoom: 14,
+      essential: true,
     });
+  }
+}, [assets, allPins]);
 
-    // All users pins
-    allPins.forEach(p => {
-      const el = document.createElement("div");
-      el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" fill="${p.pinColor || "#0000ff"}" stroke="#fff" stroke-width="2"/>
-      </svg>`;
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([p.longitude, p.latitude])
-        .setPopup(new maplibregl.Popup({ offset: 25 }).setText(`User: ${p.uid}`))
-        .addTo(mapRef.current!);
-      markersRef.current.push(marker);
+// --- Listen to all users pins in real-time ---
+useEffect(() => {
+  const unsub = onSnapshot(collection(db, "userPins"), snap => {
+    const pins: UserPin[] = snap.docs.map(d => {
+      const data = d.data() as any;
+      return {
+        uid: data.uid,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        pinColor: data.pinColor || "#00ffff",
+        timestamp: data.timestamp?.toMillis() || Date.now(),
+      };
     });
-  }, [assets, allPins]);
+    setAllPins(pins);
+  });
+
+  return () => unsub();
+}, []);
+
+useEffect(() => {
+  const user = auth.currentUser;
+  if (!mapRef.current || !user) return;
+
+  const myPin = allPins.find(p => p.uid === user.uid);
+  if (myPin) {
+    mapRef.current.flyTo({
+      center: [myPin.longitude, myPin.latitude],
+      zoom: DEFAULT_ZOOM,
+      essential: true,
+    });
+  }
+}, [allPins]);
 
   // --- Auto pin logic ---
   useEffect(() => {
