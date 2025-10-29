@@ -1,35 +1,15 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import "leaflet/dist/leaflet.css";
-import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/firebase";
-import L from "leaflet";
-import { FiMapPin } from "react-icons/fi";
-import { renderToStaticMarkup } from "react-dom/server";
+import { useEffect, useState, useRef } from "react";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { collection, getDocs, doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { db, auth } from "@/firebase";
 
-// ✅ use direct imports for dynamic components
-const MapContainer: any = dynamic(
-  () => import("react-leaflet").then(mod => mod.MapContainer),
-  { ssr: false }
-);
-const TileLayer: any = dynamic(
-  () => import("react-leaflet").then(mod => mod.TileLayer),
-  { ssr: false }
-);
-const Marker: any = dynamic(
-  () => import("react-leaflet").then(mod => mod.Marker),
-  { ssr: false }
-);
-const Popup: any = dynamic(
-  () => import("react-leaflet").then(mod => mod.Popup),
-  { ssr: false }
-);
+const DEFAULT_CENTER: [number, number] = [120.9842, 14.5995]; // [lng, lat] for MapLibre
+const DEFAULT_ZOOM = 12;
 
-const center: [number, number] = [14.5995, 120.9842];
-
-type Asset = {
+export type Asset = {
   id: string;
   assetName?: string;
   latitude?: number;
@@ -37,20 +17,51 @@ type Asset = {
   unit?: string;
   status?: string;
   location?: string;
-  [key: string]: any;
 };
 
 export default function MapViewPage() {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
+
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [userPin, setUserPin] = useState<{ latitude: number; longitude: number; timestamp: number } | null>(null);
+  const [loadingPin, setLoadingPin] = useState(false);
 
-  const customIcon = L.divIcon({
-    html: renderToStaticMarkup(<FiMapPin size={28} color="red" />),
-    className: "",
-    iconSize: [28, 28],
-    iconAnchor: [14, 28],
-    popupAnchor: [0, -28],
-  });
+  // Initialize map (client only)
+  useEffect(() => {
+    if (!mapContainer.current || typeof window === "undefined") return;
+    if (mapRef.current) return;
 
+    mapRef.current = new maplibregl.Map({
+  container: mapContainer.current,
+  style: {
+    version: 8,
+    sources: {
+      osm: {
+        type: "raster",
+        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        tileSize: 256,
+      },
+    },
+    layers: [
+      {
+        id: "osm",
+        type: "raster",
+        source: "osm",
+        minzoom: 0,
+        maxzoom: 19,
+      },
+    ],
+  },
+  center: DEFAULT_CENTER,
+  zoom: DEFAULT_ZOOM,
+});
+
+    mapRef.current.addControl(new maplibregl.NavigationControl());
+  }, []);
+
+  // Fetch assets
   useEffect(() => {
     const fetchAssets = async () => {
       try {
@@ -58,32 +69,127 @@ export default function MapViewPage() {
         const data = snapshot.docs
           .map(doc => ({ ...(doc.data() as Asset), id: doc.id }))
           .filter(a => a.latitude && a.longitude);
-
         setAssets(data);
       } catch (err) {
-        console.error("Error fetching assets:", err);
+        console.error(err);
       }
     };
     fetchAssets();
   }, []);
 
+  // Fetch user pin
+  useEffect(() => {
+    const fetchUserPin = async () => {
+      if (!auth.currentUser) return;
+      const snap = await getDoc(doc(db, "userPins", auth.currentUser.uid));
+      if (snap.exists()) {
+        const data = snap.data() as any;
+        setUserPin({ latitude: data.latitude, longitude: data.longitude, timestamp: data.timestamp?.toMillis() || 0 });
+      }
+    };
+    fetchUserPin();
+  }, []);
+
+  // Update markers whenever assets or userPin change
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Remove old markers
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
+
+    // Add asset markers
+    assets.forEach(a => {
+      const el = document.createElement("div");
+      el.style.background = "red";
+      el.style.width = "20px";
+      el.style.height = "20px";
+      el.style.borderRadius = "50%";
+
+      const marker = new maplibregl.Marker(el)
+        .setLngLat([a.longitude!, a.latitude!])
+        .setPopup(
+          new maplibregl.Popup({ offset: 25 }).setHTML(`
+            <strong>${a.assetName}</strong>
+            ${a.unit ? `<div>${a.unit}</div>` : ""}
+            ${a.status ? `<div>Status: ${a.status}</div>` : ""}
+            ${a.location ? `<div>Location: ${a.location}</div>` : ""}
+          `)
+        )
+        .addTo(mapRef.current!);
+
+      markersRef.current.push(marker);
+    });
+
+    // Add user pin
+    if (userPin) {
+      const el = document.createElement("div");
+      el.style.background = "blue";
+      el.style.width = "20px";
+      el.style.height = "20px";
+      el.style.borderRadius = "50%";
+
+      const marker = new maplibregl.Marker(el)
+        .setLngLat([userPin.longitude, userPin.latitude])
+        .setPopup(new maplibregl.Popup({ offset: 25 }).setText("Your location"))
+        .addTo(mapRef.current!);
+
+      markersRef.current.push(marker);
+    }
+  }, [assets, userPin]);
+
+  // Handle pin button
+  const handlePinLocation = () => {
+    if (!auth.currentUser) return alert("Not logged in");
+
+    if (userPin) {
+      const now = Date.now();
+      const diff = now - userPin.timestamp;
+      const min30 = 30 * 60 * 1000;
+      if (diff < min30) {
+        const minsLeft = Math.ceil((min30 - diff) / 60000);
+        return alert(`You can pin again in ${minsLeft} minutes`);
+      }
+    }
+
+    if (!navigator.geolocation) return alert("Geolocation not supported");
+
+    setLoadingPin(true);
+    navigator.geolocation.getCurrentPosition(
+      async pos => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          await setDoc(doc(db, "userPins", auth.currentUser!.uid), {
+            uid: auth.currentUser!.uid,
+            latitude,
+            longitude,
+            timestamp: serverTimestamp(),
+          });
+          setUserPin({ latitude, longitude, timestamp: Date.now() });
+          alert("Your location has been pinned!");
+        } catch (err) {
+          console.error(err);
+          alert("Failed to pin location");
+        } finally {
+          setLoadingPin(false);
+        }
+      },
+      err => {
+        console.error(err);
+        alert("Failed to get location");
+        setLoadingPin(false);
+      }
+    );
+  };
+
   return (
-    <div style={{ height: "80vh", width: "100%" }}>
-      {typeof window !== "undefined" && (
-        <MapContainer center={center} zoom={12} style={{ height: "100%", width: "100%" }}>
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {assets.map(a => (
-            <Marker key={a.id} position={[a.latitude!, a.longitude!]} icon={customIcon}>
-              <Popup>
-                <strong>{a.assetName}</strong>
-                {a.unit && <div>{a.unit}</div>}
-                {a.status && <div>Status: {a.status}</div>}
-                {a.location && <div>Location: {a.location}</div>}
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      )}
+    <div>
+      <div ref={mapContainer} style={{ height: "70vh", width: "100%" }} />
+      <div style={{ marginTop: 10, textAlign: "center" }}>
+        <button onClick={handlePinLocation} disabled={loadingPin}>
+          {loadingPin ? "Pinning..." : "Pin My Location"}
+        </button>
+      </div>
     </div>
   );
 }
