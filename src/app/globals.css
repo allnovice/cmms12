@@ -99,3 +99,10 @@ html.dark {
   background-color: #121212;
   color: #fff;
 }
+
+.maplibregl-popup-content {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+}

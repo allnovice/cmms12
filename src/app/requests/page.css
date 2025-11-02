@@ -1,0 +1,94 @@
+/* requests-page.css — theme-aware */
+
+/* Page layout */
+.requests-page {
+  padding: 1.5rem;
+  color: var(--text-color);
+  background: var(--card-bg);
+  height: auto;
+  min-height: 100%;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Section title */
+.requests-page h2 {
+  font-size: 1.2rem;
+  margin: 1.5rem 0 1rem;
+  color: #00c6ff;
+  border-bottom: 1px solid var(--border-color, rgba(0,0,0,0.1));
+  padding-bottom: 0.3rem;
+}
+
+/* Table wrapper */
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 8px;
+  background: var(--table-bg, var(--card-bg));
+  padding: 1rem;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Tables */
+.users-table,
+.submissions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  color: var(--text-color);
+}
+
+/* Table cells */
+.users-table th,
+.users-table td,
+.submissions-table th,
+.submissions-table td {
+  text-align: left;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border-color, rgba(0,0,0,0.1));
+}
+
+/* Header row */
+.users-table th,
+.submissions-table th {
+  background: var(--header-bg);
+  font-weight: 600;
+  color: #00c6ff;
+}
+
+/* Hover row */
+.users-table tr:hover td,
+.submissions-table tr:hover td {
+  background: var(--hover-bg, rgba(0,0,0,0.05));
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .requests-page {
+    padding: 1rem;
+  }
+
+  .users-table th,
+  .users-table td,
+  .submissions-table th,
+  .submissions-table td {
+    font-size: 0.85rem;
+    padding: 0.5rem;
+  }
+}
+
+/* Theme extensions — can go in globals.css if you want shared use */
+html.light {
+  --border-color: rgba(0, 0, 0, 0.1);
+  --hover-bg: rgba(0, 0, 0, 0.05);
+  --table-bg: #f9f9f9;
+}
+
+html.dark {
+  --border-color: rgba(255, 255, 255, 0.1);
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --table-bg: #1c1c1c;
+}

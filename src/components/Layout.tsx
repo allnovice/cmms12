@@ -10,6 +10,7 @@ import {
   FiBox,
   FiClipboard,
   FiMapPin,
+  FiMessageCircle,
   FiSettings,
   FiBell,
   FiLogOut,
@@ -17,14 +18,30 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import "@/app/globals.css";
 
+interface NotificationItem {
+  docId: string;
+  filename: string;
+  filledBy: string;
+  timestamp: string;
+  signatureField: string;
+}
+
+interface PmItem {
+  content: string;
+  senderUid: string;
+  timestamp: number;
+}
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const [notifications, setNotifications] = useState<any[]>([]);
 
-  // ✅ Fetch notifications safely
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [pmNotifications, setPmNotifications] = useState<PmItem[]>([]);
+
+  // ✅ Fetch both form and PM notifications
   useEffect(() => {
-    if (!user?.signatoryLevel || user.signatoryLevel < 2) return;
+    if (!user) return;
     if (!process.env.NEXT_PUBLIC_SERV_URL2) {
       console.warn("NEXT_PUBLIC_SERV_URL2 missing");
       return;
@@ -32,32 +49,52 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
     let active = true;
 
-    const fetchNotifications = async () => {
+    const fetchFormNotifications = async () => {
+      if (!user.signatoryLevel || user.signatoryLevel < 2) return;
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_SERV_URL2}/notifications/${user.signatoryLevel}`,
-          { signal: AbortSignal.timeout(5000) } // timeout after 5s
+          { signal: AbortSignal.timeout(5000) }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
         const data = await res.json();
-        if (!active) return;
 
-        const filtered = (data.pending || []).filter((f: any) => {
-          const lvl =
-            parseInt(f.signatureField.replace("signature", "")) || 1;
-          return lvl >= 2 && lvl <= user.signatoryLevel;
-        });
-
-        setNotifications(filtered);
+        if (active) {
+          const filtered = (data.pending || []).filter((f: any) => {
+            const lvl = parseInt(f.signatureField.replace("signature", "")) || 1;
+            return lvl >= 2 && lvl <= user.signatoryLevel;
+          });
+          setNotifications(filtered);
+        }
       } catch (err: any) {
-        console.warn("Server unreachable or fetch failed:", err.message);
-        if (active) setNotifications([]); // fallback safe state
+        console.warn("Form notify error:", err.message);
+        if (active) setNotifications([]);
       }
     };
 
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
+    const fetchPmNotifications = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_SERV_URL2}/pm-notifications/${user.uid}`,
+          { signal: AbortSignal.timeout(5000) }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (active) setPmNotifications(Array.isArray(data.unread) ? data.unread : []);
+      } catch (err: any) {
+        console.warn("PM notify error:", err.message);
+        if (active) setPmNotifications([]);
+      }
+    };
+
+    // Initial + Interval refresh
+    fetchFormNotifications();
+    fetchPmNotifications();
+    const interval = setInterval(() => {
+      fetchFormNotifications();
+      fetchPmNotifications();
+    }, 30000);
+
     return () => {
       active = false;
       clearInterval(interval);
@@ -73,21 +110,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     router.push("/notifications");
   };
 
+  // ✅ Combine both counts for badge
+  const totalNotifCount = notifications.length + pmNotifications.length;
+
   const navButtons = [
     { icon: <FiHome />, path: "/" },
     { icon: <FiUsers />, path: "/users" },
     { icon: <FiBox />, path: "/assets" },
     { icon: <FiClipboard />, path: "/requests" },
     { icon: <FiMapPin />, path: "/maps" },
+    { icon: <FiMessageCircle />, path: "/chat" },
     { icon: <FiSettings />, path: "/settings" },
     { icon: <FiBell />, action: handleNotifications },
     { icon: <FiLogOut />, action: handleLogout },
   ];
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login");
-    }
+    if (!loading && !user) router.replace("/login");
   }, [user, loading, router]);
 
   if (loading) return <p>Loading...</p>;
@@ -107,8 +146,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               style={{ position: "relative" }}
             >
               {btn.icon}
-              {btn.icon.type === FiBell && notifications.length > 0 && (
-                <span className="notif-badge">{notifications.length}</span>
+              {btn.icon.type === FiBell && totalNotifCount > 0 && (
+                <span className="notif-badge">{totalNotifCount}</span>
               )}
             </button>
           ))}

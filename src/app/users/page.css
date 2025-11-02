@@ -1,0 +1,69 @@
+/* page.css */
+
+/* Scrollable table wrapper */
+.table-wrapper {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid rgba(0,0,0,0.2);
+  border-radius: 8px;
+}
+
+/* Table */
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.users-table th,
+.users-table td {
+  border: 1px solid rgba(0,0,0,0.1);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.users-table th {
+  background-color: var(--header-bg);
+  color: var(--header-text);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.users-table tbody tr:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+/* Center text */
+.text-center {
+  text-align: center;
+}
+
+/* Pin button */
+.locate-btn {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.locate-btn:hover {
+  color: #1e40af;
+  transform: scale(1.1);
+}
+
+/* Loading text */
+.loading-text {
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .users-table th,
+  .users-table td {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.5rem;
+  }
+}

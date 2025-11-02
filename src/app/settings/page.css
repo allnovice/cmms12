@@ -1,104 +1,156 @@
-/* Page wrapper */
+/* Settings Page Styles */
 .settings-form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-width: 600px;
+  max-width: 650px;
   margin: 0 auto;
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: background-color 0.3s, color 0.3s;
 }
 
-/* Headings */
 .settings-form h2 {
-  margin-bottom: 0.75rem;
-  font-size: 1.3rem;
-  font-weight: 600;
-  border-bottom: 1px solid rgba(128,128,128,0.2);
-  padding-bottom: 0.3rem;
+  font-size: 1.4rem;
+  color: var(--header-text);
+  border-bottom: 1px solid rgba(0,0,0,0.15);
+  padding-bottom: 0.4rem;
+  margin-bottom: 1rem;
 }
 
-/* Labels & inputs */
 .settings-form label {
-  font-weight: 600;
-  font-size: 0.9rem;
-  margin-bottom: 0.25rem;
   display: block;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  color: var(--text-color);
 }
 
-.settings-form input[type="text"] {
-  padding: 0.4rem 0.6rem;
-  border-radius: 6px;
-  border: 1px solid rgba(128,128,128,0.4);
+.settings-form input[type="text"],
+.settings-form input[type="email"],
+.settings-form input[type="color"] {
   width: 100%;
-  box-sizing: border-box;
-  /* do NOT override background/color so globals apply */
-}
-
-.settings-form input[readonly] {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-/* Signature canvas */
-.settings-form canvas {
-  border: 1px solid rgba(128,128,128,0.4);
+  max-width: 350px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(0,0,0,0.2);
   border-radius: 6px;
-  touch-action: none;
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  transition: border 0.2s, background-color 0.2s;
 }
 
-/* Signature actions */
-.settings-actions {
-  margin-top: 0.5rem;
+.settings-form input[type="text"]:focus,
+.settings-form input[type="email"]:focus {
+  border-color: #00c6ff;
+  outline: none;
 }
 
-.settings-actions button {
-  padding: 0.45rem 0.9rem;
-  border-radius: 6px;
+/* Short input fields (for contact & employee number) */
+.short-input {
+  max-width: 180px;
+}
+
+/* Inline row for pin color */
+.inline-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Color input + preview */
+.color-input {
+  width: 50px;
+  height: 35px;
   border: none;
   cursor: pointer;
-  font-weight: 600;
-  transition: opacity 0.2s;
+  background: transparent;
 }
 
-.settings-actions button:hover {
-  opacity: 0.85;
+.color-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.settings-actions button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Saved signature preview */
-.signature-preview {
-  margin-top: 0.5rem;
-  max-width: 100%;
-  border: 1px solid rgba(128,128,128,0.3);
+.color-swatch {
+  width: 30px;
+  height: 30px;
   border-radius: 6px;
+  border: 1px solid rgba(0,0,0,0.2);
+}
+
+/* Signature canvas spacing */
+.settings-form canvas {
+  border: 1px solid rgba(0,0,0,0.2);
+  border-radius: 6px;
+  width: 100%;
+  max-width: 450px;
+  height: auto;
+  margin-top: 0.5rem;
+}
+
+/* File input button */
+.file-input-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.file-input-btn {
+  background-color: #00c6ff;
+  color: #fff;
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.file-input-btn:hover {
+  background-color: #0094cc;
+}
+
+.file-input-btn input[type="file"] {
+  display: none;
 }
 
 /* Save button */
-.settings-form > button {
-  padding: 0.45rem 0.9rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  transition: opacity 0.2s;
+.settings-form button {
   margin-top: 1rem;
+  background-color: #00c6ff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  align-self: flex-start;
 }
 
-.settings-form > button:hover {
-  opacity: 0.85;
+.settings-form button:hover {
+  background-color: #0094cc;
 }
 
-.settings-form > button:disabled {
+.settings-form button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .settings-form {
-    padding: 0 1rem;
-  }
+/* ✅ Dark theme adjustments (inherited from globals) */
+html.dark .settings-form {
+  background-color: var(--card-bg);
+  color: var(--text-color);
+}
+
+html.dark .settings-form input,
+html.dark .settings-form button {
+  border-color: rgba(255,255,255,0.15);
+}
+
+/* Wrap the choose file input */
+.file-input-wrapper {
+  position: relative;
+  display: inline-block;
 }

@@ -8,6 +8,7 @@ import { useState } from "react";
 import TemplateList from "./components/TemplateList";
 import DynamicForm from "./components/DynamicForm";
 import SubmissionsTable from "./components/SubmissionsTable";
+import "./page.css";
 
 export default function RequestsPage() {
   const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";

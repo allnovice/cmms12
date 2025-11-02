@@ -1,31 +1,42 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/firebase";
+import { useRouter } from "next/navigation";
+import { FiMapPin } from "react-icons/fi";
+import "./page.css";
 
-type User = Record<string, any>;
+type User = {
+  id: string;
+  fullname?: string;
+  employeeNumber?: string;
+  division?: string;
+  designation?: string;
+  contact?: string;
+  email?: string;
+  role?: string;
+};
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [columns, setColumns] = useState<string[]>([]);
-  const [visibleCols, setVisibleCols] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const snapshot = await getDocs(collection(db, "users"));
-        const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const data = snapshot.docs.map(d => ({
+          id: d.id,
+          fullname: d.data().fullname,
+          employeeNumber: d.data().employeeNumber,
+          division: d.data().division,
+          designation: d.data().designation,
+          contact: d.data().contact,
+          email: d.data().email,
+        }));
         setUsers(data);
-
-        // collect all unique field names
-        const keys = new Set<string>();
-        data.forEach((item) => Object.keys(item).forEach((k) => keys.add(k)));
-        const cols = Array.from(keys);
-        setColumns(cols);
-        setVisibleCols(cols); // show all columns
       } catch (err) {
         console.error("Error fetching users:", err);
       } finally {
@@ -35,86 +46,59 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  const handleToggleColumn = (col: string) => {
-    setVisibleCols((prev) =>
-      prev.includes(col) ? prev.filter((c) => c !== col) : [...prev, col]
-    );
-  };
-
-  const sortedUsers = [...users].sort((a, b) => {
-    if (!sortConfig) return 0;
-    const { key, direction } = sortConfig;
-    const valA = a[key] ?? "";
-    const valB = b[key] ?? "";
-    if (valA < valB) return direction === "asc" ? -1 : 1;
-    if (valA > valB) return direction === "asc" ? 1 : -1;
-    return 0;
-  });
-
-  const handleSort = (key: string) => {
-    setSortConfig((prev) => {
-      if (prev && prev.key === key) {
-        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
+  const handleLocateUser = async (uid: string, fullname?: string) => {
+    try {
+      const pinDoc = await getDoc(doc(db, "userPins", uid));
+      if (!pinDoc.exists()) {
+        alert("No location found for this user.");
+        return;
       }
-      return { key, direction: "asc" };
-    });
+      const data = pinDoc.data();
+      const firstName = fullname?.split(" ")[0] || "User";
+      router.push(`/maps?userId=${uid}&lat=${data.latitude}&lng=${data.longitude}&name=${encodeURIComponent(firstName)}`);
+    } catch (err) {
+      console.error("Error locating user:", err);
+    }
   };
 
   if (loading) return <p>Loading users...</p>;
 
   return (
-    <div className="p-4">
-      {/* Column selector */}
-      <div className="mb-4 flex flex-wrap gap-3">
-        {columns.map((col) => (
-          <label key={col} className="flex items-center gap-1">
-            <input
-              type="checkbox"
-              checked={visibleCols.includes(col)}
-              onChange={() => handleToggleColumn(col)}
-            />
-            {col}
-          </label>
-        ))}
-      </div>
-
-      {/* Scrollable table with sticky header */}
-      <div
-        className="border border-gray-300 rounded"
-        style={{ maxHeight: "200px", overflowY: "auto" }} // about 5 rows visible
-      >
-        <table className="w-full text-sm border-collapse">
-          <thead className="bg-gray-100 sticky top-0">
-            <tr>
-              {visibleCols.map((col) => (
-                <th
-                  key={col}
-                  onClick={() => handleSort(col)}
-                  className="border p-2 cursor-pointer hover:bg-gray-200"
-                >
-                  {col}
-                  {sortConfig?.key === col
-                    ? sortConfig.direction === "asc"
-                      ? " ▲"
-                      : " ▼"
-                    : ""}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sortedUsers.map((u, i) => (
-              <tr key={i}>
-                {visibleCols.map((col) => (
-                  <td key={col} className="border p-2">
-                    {String(u[col] ?? "-")}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+  <div className="table-wrapper">
+    <table className="users-table">
+  <thead>
+    <tr>
+      <th className="text-center">📍</th>
+      <th>Full Name</th>
+      <th>Employee #</th>
+      <th>Division</th>
+      <th>Designation</th>
+      <th>Contact</th>
+      <th>Email</th>
+    </tr>
+  </thead>
+  <tbody>
+    {users.map(u => (
+      <tr key={u.id}>
+        <td className="text-center">
+          <button
+            onClick={() => handleLocateUser(u.id, u.fullname)}
+            title="Show on map"
+            className="locate-btn"
+          >
+            <FiMapPin size={18} />
+          </button>
+        </td>
+        <td>{u.fullname ?? "-"}</td>
+        <td>{u.employeeNumber ?? "-"}</td>
+        <td>{u.division ?? "-"}</td>
+        <td>{u.designation ?? "-"}</td>
+        <td>{u.contact ?? "-"}</td>
+        <td>{u.email ?? "-"}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+  </div>
   );
 }
