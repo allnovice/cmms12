@@ -117,7 +117,7 @@ export default function AssetsPage() {
 
   return (
     <div className="table-wrapper">
-      <h2>Assets</h2>
+      
       <table className="users-table">
         <thead>
           <tr>

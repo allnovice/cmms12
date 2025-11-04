@@ -30,18 +30,28 @@
   justify-content: center;
 }
 
+/* Flat nav icons, remove hover/active effects */
 .nav-icon {
-  background: none;
+  background: transparent;
   border: none;
+  outline: none;
+  box-shadow: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent; /* mobile flash */
+  cursor: pointer;
   color: inherit;
   font-size: 1.4rem;
-  cursor: pointer;
-  transition: transform 0.2s, opacity 0.2s;
+  transition: none; /* remove hover scale/opacity */
 }
 
-.nav-icon:hover {
-  transform: scale(1.1);
-  opacity: 0.7;
+.nav-icon:hover,
+.nav-icon:focus,
+.nav-icon:active {
+  transform: none;
+  opacity: 1;
+  background: transparent;
+  outline: none;
+  box-shadow: none;
 }
 
 /* Main dashboard area */

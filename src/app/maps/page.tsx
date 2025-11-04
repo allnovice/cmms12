@@ -156,121 +156,163 @@ export default function MapViewPage() {
   }, []);
 
   // --- Render markers ---
-  useEffect(() => {
-    if (!mapRef.current) return;
+// --- Render markers with user pin clustering ---
+// --- Render markers with manual clustering ---
+// --- Render markers with manual clustering and first names ---
+// --- Render markers with manual clustering and pre-fetched first names ---
+// --- Render markers with manual clustering and user name list ---
+// --- Render markers with manual clustering and user name list ---
+useEffect(() => {
+  if (!mapRef.current) return;
+  const map = mapRef.current;
 
-    // Clear old markers
-    markersRef.current.forEach((m) => m.remove());
-    markersRef.current = [];
+  // clear old markers
+  markersRef.current.forEach((m) => m.remove());
+  markersRef.current = [];
 
-    // --- Office markers with asset popups ---
-    offices.forEach((office) => {
-      const officeAssets = assets.filter((a) => a.location === office.name);
+  // --- Office markers (same as before) ---
+  offices.forEach((office) => {
+    const officeAssets = assets.filter((a) => a.location === office.name);
 
+    const popupEl = document.createElement("div");
+    popupEl.style.minWidth = "150px";
+
+    const title = document.createElement("strong");
+    title.textContent = office.name;
+    popupEl.appendChild(title);
+    popupEl.appendChild(document.createElement("br"));
+
+    if (officeAssets.length) {
+      officeAssets.forEach((a) => {
+        const div = document.createElement("div");
+        div.style.marginTop = "4px";
+
+        const link = document.createElement("a");
+        link.href = `/assets?highlight=${a.id}`;
+        link.textContent = `📦 ${a.assetName || "(Unnamed)"}`;
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          router.push(`/assets/${a.id}`);
+        });
+
+        div.appendChild(link);
+        popupEl.appendChild(div);
+      });
+    } else {
+      const em = document.createElement("em");
+      em.textContent = "No assets";
+      popupEl.appendChild(em);
+    }
+
+    stylePopup(popupEl);
+
+    const marker = new maplibregl.Marker({ color: "#0078ff" })
+      .setLngLat([office.longitude, office.latitude])
+      .setPopup(new maplibregl.Popup({ offset: 25 }).setDOMContent(popupEl))
+      .addTo(map);
+
+    markersRef.current.push(marker);
+  });
+
+  // --- Individual asset markers ---
+  assets
+    .filter((a) => !a.location)
+    .forEach((a) => {
+      const el = document.createElement("div");
+      el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" fill="red" stroke="#fff" stroke-width="2"/>
+      </svg>`;
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat([a.longitude!, a.latitude!])
+        .setPopup(
+          new maplibregl.Popup({ offset: 25 }).setHTML(`
+            <strong>${a.assetName}</strong>
+            ${a.unit ? `<div>${a.unit}</div>` : ""}
+            ${a.status ? `<div>Status: ${a.status}</div>` : ""}
+          `)
+        )
+        .addTo(map);
+      markersRef.current.push(marker);
+    });
+
+  // --- Pre-fetch first names for user pins ---
+  const fetchFirstNames = async () => {
+    const uidToName: Record<string, string> = {};
+    await Promise.all(
+      allPins.map(async (p) => {
+        try {
+          const snap = await getDoc(doc(db, "users", p.uid));
+          if (snap.exists()) {
+            const fullname = snap.data()?.fullname;
+            uidToName[p.uid] = fullname ? fullname.split(" ")[0] : p.uid;
+          } else {
+            uidToName[p.uid] = p.uid;
+          }
+        } catch {
+          uidToName[p.uid] = p.uid;
+        }
+      })
+    );
+    return uidToName;
+  };
+
+  fetchFirstNames().then((uidToName) => {
+    // --- Manual clustering ---
+    const clusterDistance = 50;
+    const clusters: { lat: number; lng: number; count: number; pins: UserPin[] }[] = [];
+
+    allPins.forEach((p) => {
+      const point = map.project([p.longitude, p.latitude]);
+      let added = false;
+
+      for (const c of clusters) {
+        const cPoint = map.project([c.lng, c.lat]);
+        const dx = point.x - cPoint.x;
+        const dy = point.y - cPoint.y;
+        if (Math.sqrt(dx * dx + dy * dy) < clusterDistance) {
+          c.pins.push(p);
+          c.count++;
+          added = true;
+          break;
+        }
+      }
+
+      if (!added) {
+        clusters.push({ lat: p.latitude, lng: p.longitude, count: 1, pins: [p] });
+      }
+    });
+
+    clusters.forEach((c) => {
       const popupEl = document.createElement("div");
-      popupEl.style.minWidth = "150px";
 
-      const title = document.createElement("strong");
-      title.textContent = office.name;
-      popupEl.appendChild(title);
-      popupEl.appendChild(document.createElement("br"));
+      if (c.count > 1) {
+        const title = document.createElement("strong");
+        title.textContent = `${c.count} Users:`;
+        popupEl.appendChild(title);
+        popupEl.appendChild(document.createElement("br"));
 
-      if (officeAssets.length) {
-        officeAssets.forEach((a) => {
+        c.pins.forEach((p) => {
           const div = document.createElement("div");
-          div.style.marginTop = "4px";
-
-          const link = document.createElement("a");
-link.href = `/assets?highlight=${a.id}`;
-link.textContent = `📦 ${a.assetName || "(Unnamed)"}`;
-link.className = "popup-asset-link";
-
-// Optional: prevent default behavior if you want client-side navigation with Next.js router
-link.addEventListener("click", (e) => {
-  e.preventDefault();
-  router.push(`/assets?highlight=${a.id}`);
-});
-
-          // Fly to asset on click
-          link.addEventListener("click", (e) => {
-
-  e.preventDefault();
-
-  router.push(`/assets/${a.id}`); // navigate to asset page
-
-});
-
-
-          div.appendChild(link);
+          div.textContent = uidToName[p.uid] || p.uid;
           popupEl.appendChild(div);
         });
       } else {
-        const em = document.createElement("em");
-        em.textContent = "No assets";
-        popupEl.appendChild(em);
+        popupEl.textContent = `User: ${uidToName[c.pins[0].uid]}`;
       }
 
       stylePopup(popupEl);
 
-      const marker = new maplibregl.Marker({ color: "#0078ff" })
-        .setLngLat([office.longitude, office.latitude])
+      // --- Use same MapLibre pin design ---
+      const color = c.count > 1 ? "orange" : c.pins[0].pinColor || "#0078ff";
+      const marker = new maplibregl.Marker({ color })
+        .setLngLat([c.lng, c.lat])
         .setPopup(new maplibregl.Popup({ offset: 25 }).setDOMContent(popupEl))
-        .addTo(mapRef.current!);
+        .addTo(map);
 
       markersRef.current.push(marker);
     });
-
-    // --- Individual asset markers (assets without office) ---
-    assets
-      .filter((a) => !a.location)
-      .forEach((a) => {
-        const el = document.createElement("div");
-        el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10" fill="red" stroke="#fff" stroke-width="2"/>
-        </svg>`;
-        const marker = new maplibregl.Marker({ element: el })
-          .setLngLat([a.longitude!, a.latitude!])
-          .setPopup(
-            new maplibregl.Popup({ offset: 25 }).setHTML(`
-              <strong>${a.assetName}</strong>
-              ${a.unit ? `<div>${a.unit}</div>` : ""}
-              ${a.status ? `<div>Status: ${a.status}</div>` : ""}
-            `)
-          )
-          .addTo(mapRef.current!);
-        markersRef.current.push(marker);
-      });
-
-    // --- User pins with first name and themed popup ---
-    allPins.forEach(async (p) => {
-      const el = document.createElement("div");
-      el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" fill="${p.pinColor || "#0000ff"}" stroke="#fff" stroke-width="2"/>
-      </svg>`;
-
-      const marker = new maplibregl.Marker({ element: el }).setLngLat([
-        p.longitude,
-        p.latitude,
-      ]);
-
-      // fetch user's fullname
-      const userSnap = await getDoc(doc(db, "users", p.uid));
-      let firstName = p.uid;
-      if (userSnap.exists()) {
-        const fullname = userSnap.data()?.fullname;
-        if (fullname) firstName = fullname.split(" ")[0];
-      }
-
-      const popupEl = document.createElement("div");
-      popupEl.textContent = `User: ${firstName}`;
-      stylePopup(popupEl);
-
-      marker.setPopup(new maplibregl.Popup({ offset: 25 }).setDOMContent(popupEl));
-
-      marker.addTo(mapRef.current!);
-      markersRef.current.push(marker);
-    });
-  }, [assets, offices, allPins]);
+  });
+}, [assets, offices, allPins]);
 
   // --- Fly to asset if URL has lat/lng ---
   useEffect(() => {

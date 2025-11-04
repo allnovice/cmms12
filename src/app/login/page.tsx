@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from "firebase/auth";
 import { auth, db } from "@/firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import "./login.css";
@@ -14,33 +17,43 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  // Forgot password toggle
+  const [forgotMode, setForgotMode] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setMessage("");
     setLoading(true);
 
     try {
-      // Firebase Email/Password Sign-In
-      const userCred = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCred.user;
+      if (forgotMode) {
+        // Forgot password: send reset link
+        await sendPasswordResetEmail(auth, email);
+        setMessage("✅ Password reset link sent! Check your inbox.");
+      } else {
+        // Login flow
+        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCred.user;
 
-      // Firestore check: does user exist?
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
 
-      if (!userSnap.exists()) {
-        // First login → create Firestore user document
-        await setDoc(userRef, {
-          uid: user.uid,
-          email: user.email,
-          createdAt: serverTimestamp(),
-          role: "user", // default role (optional)
-        });
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            uid: user.uid,
+            email: user.email,
+            createdAt: serverTimestamp(),
+            role: "user",
+            signatoryLevel: "1",
+          });
+        }
+
+        router.replace("/");
       }
-
-      router.replace("/"); // go to dashboard
     } catch (err: any) {
-      setError(err.message || "Login failed");
+      setError(err.message || (forgotMode ? "Failed to send reset link" : "Login failed"));
     } finally {
       setLoading(false);
     }
@@ -49,10 +62,8 @@ export default function LoginPage() {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h2>Welcome Back</h2>
-        <p>Please sign in to continue</p>
-
-        <form onSubmit={handleLogin} className="login-form">
+        <form onSubmit={handleSubmit} className="login-form">
+          {/* Email input used in both modes */}
           <input
             type="email"
             placeholder="Email"
@@ -61,20 +72,40 @@ export default function LoginPage() {
             required
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          {/* Password only in login mode */}
+          {!forgotMode && (
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          )}
 
+          {/* Error / success messages */}
           {error && <p className="error-text">{error}</p>}
+          {message && <p className="reset-message">{message}</p>}
 
+          {/* Main button */}
           <button type="submit" disabled={loading}>
-            {loading ? "Signing in..." : "Login"}
+            {loading ? "Processing..." : forgotMode ? "Send Link" : "Login"}
           </button>
         </form>
+
+        {/* Toggle link */}
+        <button
+          type="button"
+          className="forgot-btn"
+          onClick={() => {
+            setForgotMode(!forgotMode);
+            setError("");
+            setMessage("");
+            setPassword("");
+          }}
+        >
+          {forgotMode ? "Back to Login" : "Forgot Password?"}
+        </button>
       </div>
     </div>
   );

@@ -20,11 +20,12 @@ export default function SignatureCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const padRef = useRef<SignaturePad | null>(null);
 
+  // Initialize signature pad
   useEffect(() => {
     if (mode === "draw" && canvasRef.current) {
       const canvas = canvasRef.current;
       const width = Math.min(window.innerWidth * 0.9, 800);
-      const height = width / 2.5; // make it taller proportionally
+      const height = width / 2.5;
       canvas.width = width;
       canvas.height = height;
 
@@ -41,6 +42,7 @@ export default function SignatureCanvas({
     }
   }, [mode]);
 
+  // Save drawn signature
   const saveCanvas = () => {
     const pad = padRef.current;
     if (!pad || pad.isEmpty()) {
@@ -59,6 +61,7 @@ export default function SignatureCanvas({
       });
   };
 
+  // Upload & preview PNG
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -66,47 +69,49 @@ export default function SignatureCanvas({
     if (file.size / 1024 / 1024 > maxFileSizeMB)
       return alert(`File must be < ${maxFileSizeMB} MB`);
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const url = reader.result as string;
-      setPreviewUrl(url);
-      fetch(url)
-        .then((res) => res.blob())
-        .then((blob) => onSave(blob));
-    };
-    reader.readAsDataURL(file);
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url); // ✅ show immediately
+    onSave(file); // ✅ also pass blob up
   };
 
   const clearCanvas = () => padRef.current?.clear();
 
   return (
-  <div>
-    {mode === "preview" && (
-      <div className="signature-preview">
-        {previewUrl ? (
-          <img src={previewUrl} alt="Signature preview" />
-        ) : (
-          <div className="signature-placeholder">No signature</div>
-        )}
-        <div className="signature-preview-buttons">
-          <button onClick={() => setMode("draw")}>Draw / Update</button>
-          {/* Removed duplicate <input type="file" /> here */}
-        </div>
-      </div>
-    )}
+    <div>
+      {mode === "preview" && (
+        <div className="signature-preview">
+          {previewUrl ? (
+            <img src={previewUrl} alt="Signature preview" />
+          ) : (
+            <div className="signature-placeholder">No signature</div>
+          )}
 
-    {mode === "draw" && (
-      <div className="signature-overlay">
-        <div className="signature-modal">
-          <canvas ref={canvasRef} className="signature-canvas" />
-          <div className="signature-buttons">
-            <button onClick={clearCanvas}>Clear</button>
-            <button onClick={saveCanvas}>Save</button>
-            <button onClick={() => setMode("preview")}>Cancel</button>
+          <div className="signature-preview-buttons">
+            <button onClick={() => setMode("draw")}>Draw</button>
+
+            {/* ✅ File picker included here for upload preview */}
+            <input
+              type="file"
+              accept="image/png"
+              onChange={handleUpload}
+              style={{ marginLeft: "1rem" }}
+            />
           </div>
         </div>
-      </div>
-    )}
-  </div>
-);
+      )}
+
+      {mode === "draw" && (
+        <div className="signature-overlay">
+          <div className="signature-modal">
+            <canvas ref={canvasRef} className="signature-canvas" />
+            <div className="signature-buttons">
+              <button onClick={clearCanvas}>Clear</button>
+              <button onClick={saveCanvas}>Save</button>
+              <button onClick={() => setMode("preview")}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

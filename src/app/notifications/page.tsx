@@ -89,8 +89,29 @@ export default function NotificationsPage() {
     router.push("/requests");
   };
 
-  const handlePmClick = (pm: PmItem) => {
-  router.push(`/chat?uid=${pm.senderUid}`);
+  const handlePmClick = async (pm: PmItem) => {
+  if (!user?.uid) return;
+
+  try {
+    // Mark messages from this sender as seen
+    await fetch(`${process.env.NEXT_PUBLIC_SERV_URL2}/pm-seen/${user.uid}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ senderUid: pm.senderUid }),
+    });
+
+    // Remove these PMs from local state immediately
+    setPmNotifications((prev) =>
+      prev.filter((p) => p.senderUid !== pm.senderUid)
+    );
+
+    // Navigate to chat
+    router.push(`/chat?uid=${pm.senderUid}`);
+  } catch (err) {
+    console.error("Failed to mark PMs as seen:", err);
+    // Still navigate even if marking fails
+    router.push(`/chat?uid=${pm.senderUid}`);
+  }
 };
 
   return (

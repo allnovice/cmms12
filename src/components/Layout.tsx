@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase";
@@ -34,72 +34,80 @@ interface PmItem {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, loading } = useAuth();
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [pmNotifications, setPmNotifications] = useState<PmItem[]>([]);
 
-  // ✅ Fetch both form and PM notifications
-  useEffect(() => {
-    if (!user) return;
-    if (!process.env.NEXT_PUBLIC_SERV_URL2) {
-      console.warn("NEXT_PUBLIC_SERV_URL2 missing");
-      return;
+  const fetchFormNotifications = async (user: any, active: { value: boolean }) => {
+    if (!user.signatoryLevel || user.signatoryLevel < 2) return;
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SERV_URL2}/notifications/${user.signatoryLevel}`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (active.value) {
+        const filtered = (data.pending || []).filter((f: any) => {
+          const lvl = parseInt(f.signatureField.replace("signature", "")) || 1;
+          return lvl >= 2 && lvl <= user.signatoryLevel;
+        });
+        setNotifications(filtered);
+      }
+    } catch (err: any) {
+      console.warn("Form notify error:", err.message);
+      if (active.value) setNotifications([]);
     }
+  };
 
-    let active = true;
+  const fetchPmNotifications = async (user: any, active: { value: boolean }) => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SERV_URL2}/pm-notifications/${user.uid}`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (active.value) setPmNotifications(Array.isArray(data.unread) ? data.unread : []);
+    } catch (err: any) {
+      console.warn("PM notify error:", err.message);
+      if (active.value) setPmNotifications([]);
+    }
+  };
 
-    const fetchFormNotifications = async () => {
-      if (!user.signatoryLevel || user.signatoryLevel < 2) return;
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_SERV_URL2}/notifications/${user.signatoryLevel}`,
-          { signal: AbortSignal.timeout(5000) }
-        );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+  // ✅ Fetch both on mount + every 30s
+  useEffect(() => {
+    if (!user || !process.env.NEXT_PUBLIC_SERV_URL2) return;
+    const active = { value: true };
 
-        if (active) {
-          const filtered = (data.pending || []).filter((f: any) => {
-            const lvl = parseInt(f.signatureField.replace("signature", "")) || 1;
-            return lvl >= 2 && lvl <= user.signatoryLevel;
-          });
-          setNotifications(filtered);
-        }
-      } catch (err: any) {
-        console.warn("Form notify error:", err.message);
-        if (active) setNotifications([]);
-      }
-    };
+    fetchFormNotifications(user, active);
+    fetchPmNotifications(user, active);
 
-    const fetchPmNotifications = async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_SERV_URL2}/pm-notifications/${user.uid}`,
-          { signal: AbortSignal.timeout(5000) }
-        );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (active) setPmNotifications(Array.isArray(data.unread) ? data.unread : []);
-      } catch (err: any) {
-        console.warn("PM notify error:", err.message);
-        if (active) setPmNotifications([]);
-      }
-    };
-
-    // Initial + Interval refresh
-    fetchFormNotifications();
-    fetchPmNotifications();
     const interval = setInterval(() => {
-      fetchFormNotifications();
-      fetchPmNotifications();
+      fetchFormNotifications(user, active);
+      fetchPmNotifications(user, active);
     }, 30000);
 
     return () => {
-      active = false;
+      active.value = false;
       clearInterval(interval);
     };
   }, [user]);
+
+  // ✅ Refresh immediately when returning from /notifications
+  useEffect(() => {
+    if (!user) return;
+    if (pathname !== "/notifications") {
+      const active = { value: true };
+      fetchFormNotifications(user, active);
+      fetchPmNotifications(user, active);
+      return () => {
+        active.value = false;
+      };
+    }
+  }, [pathname, user]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -110,7 +118,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     router.push("/notifications");
   };
 
-  // ✅ Combine both counts for badge
   const totalNotifCount = notifications.length + pmNotifications.length;
 
   const navButtons = [
