@@ -17,7 +17,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 
 type Asset = {
   id: string;
-  assetName?: string;
+  article?: string; // <-- add this
   latitude?: number;
   longitude?: number;
   unit?: string;
@@ -189,7 +189,7 @@ useEffect(() => {
 
         const link = document.createElement("a");
         link.href = `/assets?highlight=${a.id}`;
-        link.textContent = `📦 ${a.assetName || "(Unnamed)"}`;
+        link.textContent = `📦 ${a.article || "(Unnamed)"}`;
         link.addEventListener("click", (e) => {
           e.preventDefault();
           router.push(`/assets/${a.id}`);
@@ -226,7 +226,7 @@ useEffect(() => {
         .setLngLat([a.longitude!, a.latitude!])
         .setPopup(
           new maplibregl.Popup({ offset: 25 }).setHTML(`
-            <strong>${a.assetName}</strong>
+            <strong>${a.article}</strong>
             ${a.unit ? `<div>${a.unit}</div>` : ""}
             ${a.status ? `<div>Status: ${a.status}</div>` : ""}
           `)

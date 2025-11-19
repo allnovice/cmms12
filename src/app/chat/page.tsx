@@ -21,13 +21,14 @@ interface Message {
 interface User {
   uid: string;
   fullname: string;
+  pinColor?: string;
 }
 
 type ChatMode = "general" | "pm" | "anon";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [loadingMessages, setLoadingMessages] = useState(true); // ✅ new state
+  const [loadingMessages, setLoadingMessages] = useState(true);
   const [input, setInput] = useState("");
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
@@ -44,52 +45,53 @@ export default function ChatPage() {
     return () => unsub();
   }, []);
 
-  // 🔹 Users
+  // 🔹 Users (now includes pinColor)
   useEffect(() => {
     const fetchUsers = async () => {
       const snap = await getDocs(collection(firestoreDb, "users"));
       const users: User[] = snap.docs.map((doc) => ({
         uid: doc.id,
         fullname: doc.data().fullname || "",
+        pinColor: doc.data().pinColor || "#000000",
       }));
       setAllUsers(users);
     };
     fetchUsers();
   }, []);
 
-  // 🔹 Listen all messages (general + PM + anon)
+  // 🔹 Listen all messages
   useEffect(() => {
     const refMsgs = rtdbRef(rtdb, "messages");
     const refAnon = rtdbRef(rtdb, "anonmsgs");
 
-    let firstLoad = true; // ✅ track initial load
+    let firstLoad = true;
 
     const handleMessages = (snap: any) => {
       const data = snap.val() || {};
-      const parsed: Message[] = Object.entries(data).map(([id, val]: any) => ({
+      return Object.entries(data).map(([id, val]: any) => ({
         id,
         senderUid: val.senderUid,
         recipientUid: val.recipientUid || null,
         content: val.content,
         timestamp: val.timestamp || 0,
       }));
-      return parsed;
     };
 
     const handleAnon = (snap: any) => {
       const data = snap.val() || {};
       const now = Date.now();
       const TEN_MIN = 10 * 60 * 1000;
-      const parsed: Message[] = [];
+      const list: Message[] = [];
 
       Object.entries(data).forEach(([id, val]: any) => {
         if (now - val.timestamp > TEN_MIN) {
           remove(rtdbRef(rtdb, `anonmsgs/${id}`));
         } else {
-          parsed.push({ id, content: val.content, timestamp: val.timestamp, anon: true });
+          list.push({ id, content: val.content, timestamp: val.timestamp, anon: true });
         }
       });
-      return parsed;
+
+      return list;
     };
 
     const unsubMsgs = onValue(refMsgs, (snap) => {
@@ -97,7 +99,7 @@ export default function ChatPage() {
       setMessages((prev) => {
         const anon = prev.filter((m) => m.anon);
         const combined = [...anon, ...generalPM].sort((a, b) => a.timestamp - b.timestamp);
-        if (firstLoad) setLoadingMessages(false); // ✅ done loading
+        if (firstLoad) setLoadingMessages(false);
         return combined;
       });
     });
@@ -107,7 +109,7 @@ export default function ChatPage() {
       setMessages((prev) => {
         const generalPM = prev.filter((m) => !m.anon);
         const combined = [...generalPM, ...anon].sort((a, b) => a.timestamp - b.timestamp);
-        if (firstLoad) setLoadingMessages(false); // ✅ done loading
+        if (firstLoad) setLoadingMessages(false);
         return combined;
       });
     });
@@ -118,7 +120,7 @@ export default function ChatPage() {
     };
   }, []);
 
-  // 🔹 Handle URL /uid param for PM
+  // 🔹 Handle ?uid= PM
   useEffect(() => {
     const uid = searchParams.get("uid");
     if (!uid || !allUsers.length) return;
@@ -136,7 +138,7 @@ export default function ChatPage() {
     }
   }, [messages]);
 
-  // 🔹 Autocomplete /pm
+  // 🔹 Autocomplete
   useEffect(() => {
     if (input.startsWith("/pm ")) {
       const query = input.slice(4).toLowerCase();
@@ -188,7 +190,6 @@ export default function ChatPage() {
       setInput("");
       return;
     }
-
     if (trimmed.startsWith("/pm ") && suggestions.length === 1) {
       setPmTarget(suggestions[0]);
       setMode("pm");
@@ -199,24 +200,50 @@ export default function ChatPage() {
     sendMessage();
   };
 
-  const getUserName = (uid: string) => {
-    const user = allUsers.find((u) => u.uid === uid);
-    return user ? user.fullname.split(" ")[0] : "Unknown";
-  };
+  const getUser = (uid: string) => allUsers.find((u) => u.uid === uid);
 
+  // 🔹 NEW — colored prefix
   const renderPrefix = (msg: Message) => {
-    if (msg.anon) return "?: ";
-    if (!currentUser) return "";
-    const senderName = getUserName(msg.senderUid || "");
-    const recipientName = msg.recipientUid ? getUserName(msg.recipientUid) : null;
+    if (msg.anon)
+      return <span style={{ color: "#888" }}>?: </span>;
 
+    if (!currentUser) return "";
+
+    const sender = getUser(msg.senderUid || "");
+    const recipient = msg.recipientUid ? getUser(msg.recipientUid) : null;
+
+    const senderName = sender?.fullname.split(" ")[0] || "Unknown";
+    const recipientName = recipient?.fullname.split(" ")[0] || "Unknown";
+
+    const senderColor = sender?.pinColor || "#000";
+    const recipientColor = recipient?.pinColor || "#000";
+
+    // PM
     if (msg.recipientUid) {
-      if (msg.senderUid === currentUser.uid) return `${recipientName} < `;
-      else if (msg.recipientUid === currentUser.uid) return `${senderName} > `;
+      if (msg.senderUid === currentUser.uid) {
+        return (
+          <span style={{ color: recipientColor }}>
+            {recipientName} {"< "}
+          </span>
+        );
+      }
+      if (msg.recipientUid === currentUser.uid) {
+        return (
+          <span style={{ color: senderColor }}>
+            {senderName} {" > "}
+          </span>
+        );
+      }
     }
 
+    // General
     if (msg.senderUid === currentUser.uid) return "";
-    return `${senderName}: `;
+
+    return (
+      <span style={{ color: senderColor }}>
+        {senderName}:{" "}
+      </span>
+    );
   };
 
   return (
@@ -231,17 +258,19 @@ export default function ChatPage() {
 
       <div ref={containerRef} className="chat-messages">
         {loadingMessages ? (
-          <p className="chat-loading">Loading messages...</p> // ✅ added loading
+          <p className="chat-loading">Loading messages...</p>
         ) : messages.length === 0 ? (
           <p className="chat-empty">No messages yet 👋</p>
         ) : (
           messages.map((msg) => (
             <div
               key={msg.id}
-              className={`chat-message ${msg.senderUid === currentUser?.uid ? "user" : "other"}`}
+              className={`chat-message ${
+                msg.senderUid === currentUser?.uid ? "user" : "other"
+              }`}
             >
               <strong>{renderPrefix(msg)}</strong>
-              {msg.content}
+              <span>{msg.content}</span>
             </div>
           ))
         )}

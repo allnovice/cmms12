@@ -1,0 +1,4 @@
+release-type: node
+package-name: cmms11
+bump-minor-pre-major: true
+default-release-branch: changelog

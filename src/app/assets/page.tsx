@@ -9,10 +9,15 @@ import "./page.css";
 
 type Asset = {
   id: string;
-  assetName?: string;
-  assignedTo?: string;
-  category?: string;
-  status?: string;
+  article?: string;
+  typeOfEquipment?: string;
+  acquisitionDate?: any;
+  acquisitionValue?: number;
+  createdAt?: any;
+  description?: string;
+  propertyNumber?: number;
+  serialNumber?: string;
+  assignedTo?: string; // uid
   location?: string;
   latitude?: number;
   longitude?: number;
@@ -26,23 +31,30 @@ type Office = {
   longitude: number;
 };
 
+type User = {
+  uid: string;
+  fullname: string;
+};
+
 export default function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const highlightId = searchParams.get("highlight"); // asset to highlight
+  const highlightId = searchParams.get("highlight");
 
-  // --- Fetch assets + offices ---
+  // --- Fetch assets + offices + users ---
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [assetSnap, officeSnap] = await Promise.all([
+        const [assetSnap, officeSnap, userSnap] = await Promise.all([
           getDocs(collection(db, "assets")),
           getDocs(collection(db, "locations")),
+          getDocs(collection(db, "users")),
         ]);
 
         const assetData = assetSnap.docs.map((d) => ({
@@ -55,14 +67,21 @@ export default function AssetsPage() {
           ...(d.data() as Omit<Office, "id">),
         }));
 
+        const userData = userSnap.docs.map((d) => ({
+          uid: d.id,
+          fullname: d.data().fullname || "Unnamed",
+        })) as User[];
+
         setAssets(assetData);
         setOffices(officeData);
+        setUsers(userData);
       } catch (err) {
         console.error("Error loading data:", err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
@@ -100,12 +119,32 @@ export default function AssetsPage() {
     }
   };
 
+  // --- Update assigned user ---
+  const handleAssignUser = async (assetId: string, uid: string) => {
+    setUpdating(assetId);
+
+    try {
+      const docRef = doc(db, "assets", assetId);
+      await updateDoc(docRef, { assignedTo: uid });
+
+      setAssets((prev) =>
+        prev.map((a) =>
+          a.id === assetId ? { ...a, assignedTo: uid } : a
+        )
+      );
+    } catch (err) {
+      console.error("Failed to assign user:", err);
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   // --- View asset on map ---
   const handleLocateAsset = (asset: Asset) => {
     if (asset.latitude && asset.longitude) {
       router.push(
         `/maps?assetId=${asset.id}&lat=${asset.latitude}&lng=${asset.longitude}&name=${encodeURIComponent(
-          asset.assetName || ""
+          asset.article || ""
         )}`
       );
     } else {
@@ -117,19 +156,23 @@ export default function AssetsPage() {
 
   return (
     <div className="table-wrapper">
-      
       <table className="users-table">
         <thead>
           <tr>
             <th>📍</th>
-            <th>Asset Name</th>
+            <th>Article</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Property #</th>
+            <th>Serial #</th>
+            <th>Acq. Date</th>
+            <th>Acq. Value</th>
             <th>Assigned To</th>
-            <th>Category</th>
-            <th>Status</th>
-            <th>Office Location</th>
+            <th>Office</th>
             <th>Action</th>
           </tr>
         </thead>
+
         <tbody>
           {assets.map((a) => (
             <tr
@@ -145,12 +188,38 @@ export default function AssetsPage() {
                   <FiMapPin size={18} />
                 </button>
               </td>
-              <td>{a.assetName || "-"}</td>
-              <td>{a.assignedTo || "-"}</td>
-              <td>{a.category || "-"}</td>
-              <td>{a.status || "-"}</td>
 
-              {/* Office dropdown */}
+              <td>{a.article || "-"}</td>
+              <td>{a.typeOfEquipment || "-"}</td>
+              <td>{a.description || "-"}</td>
+              <td>{a.propertyNumber || "-"}</td>
+              <td>{a.serialNumber || "-"}</td>
+
+              <td>
+                {a.acquisitionDate
+                  ? new Date(a.acquisitionDate.seconds * 1000).toLocaleDateString()
+                  : "-"}
+              </td>
+
+              <td>{a.acquisitionValue || "-"}</td>
+
+              {/* --- User Dropdown --- */}
+              <td>
+                <select
+                  value={a.assignedTo || ""}
+                  onChange={(e) => handleAssignUser(a.id, e.target.value)}
+                  disabled={updating === a.id}
+                >
+                  <option value="">Select User</option>
+                  {users.map((u) => (
+                    <option key={u.uid} value={u.uid}>
+                      {u.fullname}
+                    </option>
+                  ))}
+                </select>
+              </td>
+
+              {/* --- Office Dropdown --- */}
               <td>
                 <select
                   value={offices.find((o) => o.name === a.location)?.id || ""}
