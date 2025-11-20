@@ -215,7 +215,7 @@ export default function ChatPage() {
   const senderName = sender?.fullname.split(" ")[0] || "Unknown";
   const recipientName = recipient?.fullname.split(" ")[0] || "Unknown";
 
-  // PM messages — use pinColor
+  // PM messages — use pinColor, keep symbols
   if (msg.recipientUid) {
     const senderColor = sender?.pinColor || "#000";
     const recipientColor = recipient?.pinColor || "#000";
@@ -228,11 +228,10 @@ export default function ChatPage() {
     }
   }
 
-  // General chat — no color
-  if (msg.senderUid === currentUser.uid) return null; // your own message shows no prefix
+  // General chat — no color / prefix
+  if (msg.senderUid === currentUser.uid) return null;
   return <span>{senderName}: </span>;
 };
-
   return (
     <div className="chat-box">
       <div className="chat-header">
@@ -250,16 +249,16 @@ export default function ChatPage() {
           <p className="chat-empty">No messages yet 👋</p>
         ) : (
           messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`chat-message ${
-                msg.senderUid === currentUser?.uid ? "user" : "other"
-              }`}
-            >
-              <strong>{renderPrefix(msg)}</strong>
-              <span>{msg.content}</span>
-            </div>
-          ))
+  <div
+    key={msg.id}
+    className={`chat-message ${
+      msg.senderUid === currentUser?.uid ? "user" : "other"
+    } ${msg.recipientUid ? "pm" : ""}`} // PM messages get 'pm' class
+  >
+    <strong>{renderPrefix(msg)}</strong>
+    <span>{msg.content}</span>
+  </div>
+))
         )}
       </div>
 

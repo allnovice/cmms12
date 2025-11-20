@@ -94,3 +94,8 @@ html.dark .chat-suggestions {
 html.dark .chat-suggestion-item:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* Right-align PM messages */
+.chat-message.pm {
+  text-align: right;
+}
