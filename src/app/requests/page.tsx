@@ -21,7 +21,7 @@ export default function RequestsPage() {
 
   const addRow = () => setVisibleRow((r) => Math.min(r + 1, maxRow));
 
-  const formHandler = useFormHandler(SERVER_URL);
+  const formHandler = useFormHandler(SERVER_URL, user);
 
   return (
     <div className="requests-page">

@@ -25,7 +25,12 @@ export default function DynamicFields({
     <>
       {placeholders.map((p, i) => {
         if (p === "_break")
-          return <div key={`break-${i}`} style={{ flexBasis: "100%", height: 0, margin: "12px 0" }} />;
+          return (
+            <div
+              key={`break-${i}`}
+              style={{ flexBasis: "100%", height: 0, margin: "12px 0" }}
+            />
+          );
 
         // --- Signature fields ---
         if (/^signature\d*$/i.test(p))
@@ -45,6 +50,21 @@ export default function DynamicFields({
         const num = match ? parseInt(match[1]) : null;
         if (num && num > visibleRow && !formValues[p]) return null;
 
+        // --- Make nameN:, designationN:, dateN: read-only if signature exists ---
+        const isAutoFilledField =
+          /^name\d+:$/.test(p) ||
+          /^designation\d+:$/.test(p) ||
+          /^date\d+:$/.test(p);
+
+        // Get corresponding signature number
+        const signatureNumMatch = p.match(/\d+/);
+        const correspondingSignature = signatureNumMatch
+          ? `signature${signatureNumMatch[0]}`
+          : null;
+        const isSigned = correspondingSignature
+          ? !!formValues[correspondingSignature]
+          : false;
+
         return (
           <div key={p} style={{ margin: "8px", textAlign: "center" }}>
             <label>{p}</label>
@@ -59,7 +79,11 @@ export default function DynamicFields({
               }}
               value={formValues[p] ?? ""}
               onChange={(e) => handleChange(p, e.target.value)}
-              readOnly={isReadOnly || (selectedForm?.status && selectedForm.status !== "pending")}
+              readOnly={
+                isReadOnly ||
+                (selectedForm?.status && selectedForm.status !== "pending") ||
+                (isAutoFilledField && isSigned)
+              }
             />
           </div>
         );

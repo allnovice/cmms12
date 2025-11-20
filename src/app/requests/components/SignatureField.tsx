@@ -21,25 +21,30 @@ export default function SignatureField({
   isReadOnly,
 }: SignatureFieldProps) {
   const level = parseInt(name.replace("signature", "")) || 1;
-  const canSign = (user?.signatoryLevel || 0) >= level;
+  const canSign = Number(user?.signatoryLevel) === level;
   const signed = !!formValues[name];
 
   const addSignature = () => {
-    if (!user?.signature) return alert("No signature found");
-    if (signed) return;
+  if (!user?.signature) return alert("No signature found");
+  if (signed) return;
 
-    // 1️⃣ Add signature
-    handleChange(name, user.signature);
+  const now = new Date().toLocaleDateString(); // or use toISOString() if preferred
 
-    // 2️⃣ Auto-fill name and designation for the same level
-    const nameField = `name${level}l`;
-    const designationField = `designation${level}l`;
+  // 1️⃣ Add signature
+  handleChange(name, user.signature);
 
-    handleChange(nameField, user.fullname);
-    handleChange(designationField, user.designation);
+  // 2️⃣ Auto-fill name and designation for the same level
+  const nameField = `name${level}:`;
+  const designationField = `designation${level}:`;
+  handleChange(nameField, user.fullname);
+  handleChange(designationField, user.designation);
 
-    alert(`Signature L${level} added. Name & designation auto-filled.`);
-  };
+  // 3️⃣ Auto-fill date field
+  const dateField = `date${level}:`;
+  handleChange(dateField, now);
+
+  alert(`Signature L${level} added. Name, designation & date auto-filled.`);
+};
 
   return (
     <div style={{ margin: "8px", textAlign: "center" }}>

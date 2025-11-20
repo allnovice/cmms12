@@ -4,14 +4,16 @@ import * as XLSX from "xlsx";
 import axios from "axios";
 import { auth, db } from "@/firebase";
 import {
+  getDocs,
   doc,
   updateDoc,
   addDoc,
   collection,
   serverTimestamp,
 } from "firebase/firestore";
+import { useAuth } from "@/context/AuthContext"; // optional if you want fallback inside hook
 
-export function useFormHandler(serverUrl: string) {
+export function useFormHandler(serverUrl: string, user: any) {
   const [selectedForm, setSelectedForm] = useState<any>(null);
   const [placeholders, setPlaceholders] = useState<string[]>([]);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -19,64 +21,87 @@ export function useFormHandler(serverUrl: string) {
   const [isReadOnly, setIsReadOnly] = useState<boolean>(false);
 
   const handleSelect = async (form: any, readonly = false) => {
-    setSelectedForm(form);
-    setIsReadOnly(!!readonly);
-    setPlaceholders([]);
-    setFormValues({});
-    setLoading(true);
+  setSelectedForm(form);
+  setIsReadOnly(!!readonly);
+  setPlaceholders([]);
+  setFormValues({});
+  setLoading(true);
 
-    try {
-      // 🔹 CASE 1: Template (has .url)
-      if (form.url) {
-        const res = await axios.get(form.url, { responseType: "arraybuffer" });
-        const workbook = XLSX.read(res.data, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const values: string[] = [];
+  try {
+    if (form.url) {
+      // 🔹 Fetch XLSX template
+      const res = await axios.get(form.url, { responseType: "arraybuffer" });
+      const workbook = XLSX.read(res.data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const values: string[] = [];
 
-        XLSX.utils.sheet_to_json(sheet, { header: 1 }).forEach((row: unknown) => {
-          if (Array.isArray(row)) {
-            row.forEach((cell) => {
-              if (typeof cell === "string") {
-                const matches = cell.match(/{{(.*?)}}/g);
-                if (matches) {
-                  matches.forEach((m) => {
-                    const key = m.replace(/[{}]/g, "").trim();
-                    // ✅ allow duplicates for _break, others remain unique
-                    if (key === "_break" || !values.includes(key)) values.push(key);
-                  });
-                }
+      // Extract placeholders
+      XLSX.utils.sheet_to_json(sheet, { header: 1 }).forEach((row: unknown) => {
+        if (Array.isArray(row)) {
+          row.forEach((cell) => {
+            if (typeof cell === "string") {
+              const matches = cell.match(/{{(.*?)}}/g);
+              if (matches) {
+                matches.forEach((m) => {
+                  const key = m.replace(/[{}]/g, "").trim();
+                  if (key === "_break" || !values.includes(key)) values.push(key);
+                });
               }
-            });
-          }
-        });
+            }
+          });
+        }
+      });
 
-        const initialValues: Record<string, string> = {};
-        values.forEach((v) => (initialValues[v] = ""));
-        setPlaceholders(values);
-        setFormValues(initialValues);
-      }
+      // 🔹 Fetch all users from Firestore
+      const usersSnapshot = await getDocs(collection(db, "users"));
+      const users = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...(doc.data() as any) }));
 
-      // 🔹 CASE 2: Existing submission (no url, has filledData)
-      else if (form.filledData) {
-        const orderedKeys =
-          form.placeholders && Array.isArray(form.placeholders)
-            ? form.placeholders
-            : Object.keys(form.filledData);
+      // 🔹 Get current logged-in user info
+      const currentUser = users.find(u => u.uid === user?.uid);
+      const currentLevel = currentUser ? parseInt(currentUser.signatoryLevel, 10) : 0;
+      const currentFullname = currentUser?.fullname || "";
 
-        setPlaceholders(orderedKeys);
-        setFormValues(form.filledData);
-      }
+      // 🔹 Initialize form values
+      const initialValues: Record<string, string> = {};
+for (const v of values) {
+  const nameMatch = v.match(/^name(\d+):$/);
+  const desigMatch = v.match(/^designation(\d+):$/);
 
-      else {
-        throw new Error("Invalid form selection — no URL or data found");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("⚠️ Failed to load form. Check if template URL or submission data exists.");
-    } finally {
-      setLoading(false);
+  if (nameMatch) {
+    const level = parseInt(nameMatch[1], 10);
+    // Only auto-fill if placeholder matches current user's level
+    initialValues[v] = level === currentLevel ? currentFullname : "";
+  } else if (desigMatch) {
+    const level = parseInt(desigMatch[1], 10);
+    // Auto-fill designation for current user's level
+    initialValues[v] = level === currentLevel ? currentUser?.designation || "" : "";
+  } else {
+    initialValues[v] = "";
+  }
+}
+      setPlaceholders(values);
+      setFormValues(initialValues);
     }
-  };
+
+    // 🔹 Existing submission
+    else if (form.filledData) {
+      const orderedKeys =
+        form.placeholders && Array.isArray(form.placeholders)
+          ? form.placeholders
+          : Object.keys(form.filledData);
+
+      setPlaceholders(orderedKeys);
+      setFormValues(form.filledData);
+    } else {
+      throw new Error("Invalid form selection — no URL or data found");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("⚠️ Failed to load form. Check if template URL or submission data exists.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleChange = (key: string, val: string) =>
     setFormValues((p) => ({ ...p, [key]: val }));
@@ -86,14 +111,13 @@ export function useFormHandler(serverUrl: string) {
     setLoading(true);
 
     try {
-      const user = auth.currentUser;
-      const userName = user.displayName || user.email?.split("@")[0] || "user";
+      const userName = user?.displayName || user.email?.split("@")[0] || "user";
       const userUid = user.uid;
-      const userLvl = (user as any)?.signatoryLevel || 0;
+      const userLvl = parseInt(user?.signatoryLevel || 0, 10);
       const targetSig = `signature${userLvl}`;
       const userSig = (user as any)?.signature || userName;
 
-      // ✅ Must have own signature (by UID inside URL)
+      // Must have own signature
       const hasOwnSignature = Object.entries(formValues).some(
         ([key, value]) =>
           key.toLowerCase().startsWith("signature") &&
@@ -107,14 +131,14 @@ export function useFormHandler(serverUrl: string) {
         return;
       }
 
-      // ✅ Prevent signing if this level is already signed by another user
+      // Prevent signing if this level is already signed by another user
       if (formValues[targetSig] && formValues[targetSig] !== userSig) {
         alert("⚠️ This document was already signed by another user at your level.");
         setLoading(false);
         return;
       }
 
-      // ✅ Prevent editing if a *lower-level* signature already exists
+      // Prevent editing if a lower-level signature exists
       const lowerSigned = placeholders
         .filter((p) => /^signature\d*$/i.test(p))
         .some((p) => {
@@ -128,14 +152,13 @@ export function useFormHandler(serverUrl: string) {
         return;
       }
 
-      // ✅ Check if all signatures complete
+      // Check if all signatures complete
       const allSignaturesComplete = placeholders
         .filter((p) => /^signature\d*$/i.test(p))
         .every((p) => !!formValues[p]);
 
       const nextStatus = allSignaturesComplete ? "approved" : "pending";
 
-      // 🔹 Update existing submission
       if (selectedForm?.id) {
         const ref = doc(db, "form_submissions", selectedForm.id);
         await updateDoc(ref, {
@@ -145,7 +168,6 @@ export function useFormHandler(serverUrl: string) {
         });
         alert("✅ Document updated");
       } else {
-        // 🔹 New submission
         const newDoc = await addDoc(collection(db, "form_submissions"), {
           filename: `${selectedForm.filename}_${userName}`,
           filledData: formValues,
@@ -163,7 +185,6 @@ export function useFormHandler(serverUrl: string) {
         alert("✅ New document submitted");
       }
 
-      // 🔹 Reset UI
       setSelectedForm(null);
       setFormValues({});
       setPlaceholders([]);
