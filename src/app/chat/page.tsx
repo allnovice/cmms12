@@ -204,47 +204,34 @@ export default function ChatPage() {
 
   // 🔹 NEW — colored prefix
   const renderPrefix = (msg: Message) => {
-    if (msg.anon)
-      return <span style={{ color: "#888" }}>?: </span>;
+  // Anon messages grey
+  if (msg.anon) return <span style={{ color: "#888" }}>?: </span>;
 
-    if (!currentUser) return "";
+  if (!currentUser) return null;
 
-    const sender = getUser(msg.senderUid || "");
-    const recipient = msg.recipientUid ? getUser(msg.recipientUid) : null;
+  const sender = getUser(msg.senderUid || "");
+  const recipient = msg.recipientUid ? getUser(msg.recipientUid) : null;
 
-    const senderName = sender?.fullname.split(" ")[0] || "Unknown";
-    const recipientName = recipient?.fullname.split(" ")[0] || "Unknown";
+  const senderName = sender?.fullname.split(" ")[0] || "Unknown";
+  const recipientName = recipient?.fullname.split(" ")[0] || "Unknown";
 
+  // PM messages — use pinColor
+  if (msg.recipientUid) {
     const senderColor = sender?.pinColor || "#000";
     const recipientColor = recipient?.pinColor || "#000";
 
-    // PM
-    if (msg.recipientUid) {
-      if (msg.senderUid === currentUser.uid) {
-        return (
-          <span style={{ color: recipientColor }}>
-            {recipientName} {"< "}
-          </span>
-        );
-      }
-      if (msg.recipientUid === currentUser.uid) {
-        return (
-          <span style={{ color: senderColor }}>
-            {senderName} {" > "}
-          </span>
-        );
-      }
+    if (msg.senderUid === currentUser.uid) {
+      return <span style={{ color: recipientColor }}>{recipientName} {"< "}</span>;
     }
+    if (msg.recipientUid === currentUser.uid) {
+      return <span style={{ color: senderColor }}>{senderName} {" > "}</span>;
+    }
+  }
 
-    // General
-    if (msg.senderUid === currentUser.uid) return "";
-
-    return (
-      <span style={{ color: senderColor }}>
-        {senderName}:{" "}
-      </span>
-    );
-  };
+  // General chat — no color
+  if (msg.senderUid === currentUser.uid) return null; // your own message shows no prefix
+  return <span>{senderName}: </span>;
+};
 
   return (
     <div className="chat-box">

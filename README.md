@@ -17,151 +17,76 @@ node cmms-server.js
 
 ---
 
-## 📂 Using `scrpt/` Scripts
+# CMMS User Setup Guide
 
-Before using scripts, install dependencies:
-
-cd scrpt
-npm install
-
-### Example: Add a user via Gmail
-
-# Set the Gmail address (one-time)
-echo 'export GMAIL_USER="example@gmail.com"' >> ~/.bashrc
-
-# Set the 16-character app password (one-time)
-echo 'export GMAIL_APP_PASS="your16charapppassword"' >> ~/.bashrc
-
-# Reload your shell environment
-source ~/.bashrc
-
-# Run the addUser script
-node addUser.js example@example.com
+This guide explains how to set up Firebase, Gmail OAuth, and run the Node scripts to add users and send password setup emails.
 
 ---
 
-## 📱 Termux Setup
+1. **Clone Repository & Install Dependencies**  
+   - Clone the repository:  
+     ```bash
+     git clone <repo-url>
+     ```
+   - Navigate to the script folder and install dependencies:  
+     ```bash
+     cd root/scrpt
+     npm install
+     ```
 
-pkg update && pkg upgrade -y
-pkg install git gh -y
-git --version
-gh --version
-git config --list
-gh auth login
+2. **Create Firebase Project**  
+   - Go to [Firebase Console](https://console.firebase.google.com/) and create a project (e.g., `CMMS11`).  
+   - Add a **Web App** in the project settings.  
+   - Create a `.env` file in the root folder for your Firebase configuration and Gmail sender email:
+     ```env
+     GMAIL_SENDER=example@example.com
+     NEXT_PUBLIC_FIREBASE_API_KEY=
+     NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+     NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+     NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+     NEXT_PUBLIC_FIREBASE_APP_ID=
+     ```
 
----
+3. **Download Firebase Service Account**  
+   - Go to **Project Settings → Service Accounts → Generate new private key**.  
+   - Save the file as `serviceAccountKey.json` in the `root/` folder.  
+   - This allows Node scripts to create users and generate password reset links.
 
-## 🌿 Git Init and Push
+4. **Create Google Desktop OAuth Credentials**  
+   - Go to [Google Cloud Console → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials).  
+   - Create an **OAuth Client ID → Desktop App**.  
+   - Download the JSON as `creds.json` in the `root/` folder.  
+   - This contains `client_id`, `client_secret`, and `redirect_uris` needed to generate the token.
 
-git init
-git branch -m main
-git config --global init.defaultBranch main
-git add .
-git commit -m "Initial commit"
-git branch -M main
-gh repo create your-repo-name --public --source=. --remote=origin
-git push --set-upstream origin main
-git push origin main
+5. **Generate `token.json` (Refresh Token + Access Token)**  
+   - Run the `autorize2.js` script:  
+     ```bash
+     node autorize2.js
+     ```  
+   - Visit the URL displayed in the terminal, log in with your Gmail account, copy the code shown, and paste it back into the terminal.  
+   - This generates `token.json` in the same folder.
 
----
+6. **Add Users via Script**  
+   - Use `addUser2.js` (or your `addUser` script) to create users and send password setup emails.  
+   - The script will:  
+     - Read a single email or CSV file of emails.  
+     - Create Firebase users if they do not exist.  
+     - Generate a password reset link.  
+     - Send an email via Gmail using `token.json`.
 
-## 🔁 Git Repo Maintenance
-
-git pull origin main
-git fetch
-git diff
-git log --oneline
-
----
-
-## 💻 Debian Setup
-
-apt update && apt upgrade -y
-apt install -y git curl
-curl -LO https://github.com/cli/cli/releases/download/v2.44.1/gh_2.44.1_linux_amd64.deb
-dpkg -i gh_2.44.1_linux_amd64.deb
-gh auth login
-curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-apt install -y nodejs build-essential
-node -v
-npm -v
-
----
-
-## ⚙️ Node / Next.js Dependencies
-
-npm install
-
-> Note: Running `npm install` reads package.json and installs all required dependencies automatically. You do not need to list each dependency manually.
-
----
-
-## ▲ Vercel CLI & Integration
-
-npm install -g vercel
-vercel login
-vercel
-npm run build
-npm start
-
----
-
-## 🟢 Neon (Edge Database)
-
-Create project in [Neon.tech](https://neon.tech)  
-Copy connection string → add to `.env`  
-DATABASE_URL=postgresql://user:password@ep-xxxx.ap-southeast-1.aws.neon.tech/dbname
+7. **Important Notes**  
+   - `.gitignore` entries to keep credentials safe:
+     ```
+     token.json
+     serviceAccountKey.json
+     creds.json
+     .env
+     ```
+   - Avoid hitting `RESET_PASSWORD_EXCEED_LIMIT` in Firebase by **not sending multiple password reset emails** to the same user in a short period.  
+   - All network operations (sending emails, creating Firebase users) require internet.  
+   - Node scripts must be run in `root/scrpt` where `package.json` is installed.  
 
 ---
-
-## 🔥 Firebase Integration
-
-npm install firebase
-
-**.env.local**
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
-
----
-
-## 🌐 Nginx + Ngrok Setup
-
-apt install nginx
-systemctl start nginx
-systemctl enable nginx
-# Example:
-nano /etc/nginx/sites-available/cmms.conf
-
-Ngrok:
-
-wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
-tar xvzf ngrok-v3-stable-linux-amd64.tgz
-chmod +x ngrok
-mv ngrok /usr/local/bin/
-ngrok authtoken <your_token>
-ngrok http 80
-systemctl status nginx
-
----
-
-## 🧠 PM2 Process Manager
-
-npm install -g pm2
-pm2 start npm --name "cmms-dev" -- run dev
-pm2 list
-pm2 logs cmms-dev
-pm2 stop cmms-dev
-pm2 restart cmms-dev
-pm2 delete cmms-dev
-pm2 startup systemd
-pm2 save
-
----
-
 ## 🧱 Build & Deploy Commands
 
 # Local
@@ -174,21 +99,8 @@ npm install && npm start
 # Vercel
 Handled automatically via Git integration
 
----
-
-## 🧾 Notes
-
-git add .
-git commit -m "update"
-git push origin main
-
-# Before running scripts in `scrpt/`, install dependencies:
-cd scrpt
-npm install
-
 TODO
 +timestamp caching
 +chatbot>quick tickt
 +forms
 +dashbrds
-
