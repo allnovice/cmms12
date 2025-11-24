@@ -25,26 +25,23 @@ export default function SignatureField({
   const signed = !!formValues[name];
 
   const addSignature = () => {
-  if (!user?.signature) return alert("No signature found");
-  if (signed) return;
+    if (!user?.signature) return alert("No signature found");
+    if (signed) return;
 
-  const now = new Date().toLocaleDateString(); // or use toISOString() if preferred
+    const now = new Date().toLocaleDateString();
 
-  // 1️⃣ Add signature
-  handleChange(name, user.signature);
+    // Add signature
+    handleChange(name, user.signature);
 
-  // 2️⃣ Auto-fill name and designation for the same level
-  const nameField = `name${level}:`;
-  const designationField = `designation${level}:`;
-  handleChange(nameField, user.fullname);
-  handleChange(designationField, user.designation);
+    // Auto-fill name and designation
+    handleChange(`name${level}:`, user.fullname);
+    handleChange(`designation${level}:`, user.designation);
 
-  // 3️⃣ Auto-fill date field
-  const dateField = `date${level}:`;
-  handleChange(dateField, now);
+    // Auto-fill date
+    handleChange(`date${level}:`, now);
 
-  alert(`Signature L${level} added. Name, designation & date auto-filled.`);
-};
+    alert(`Signature L${level} added. Name, designation & date auto-filled.`);
+  };
 
   return (
     <div style={{ margin: "8px", textAlign: "center" }}>
@@ -58,6 +55,8 @@ export default function SignatureField({
         >
           {signed ? `Signed (L${level})` : `Add Signature (L${level})`}
         </button>
+      ) : signed ? (
+        <p>Signed by level {level}</p>
       ) : (
         <p>Requires level {level}</p>
       )}

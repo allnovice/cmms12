@@ -138,20 +138,6 @@ for (const v of values) {
         return;
       }
 
-      // Prevent editing if a lower-level signature exists
-      const lowerSigned = placeholders
-        .filter((p) => /^signature\d*$/i.test(p))
-        .some((p) => {
-          const lvl = parseInt(p.replace(/\D/g, "")) || 0;
-          return lvl < userLvl && !!formValues[p];
-        });
-
-      if (lowerSigned) {
-        alert("⚠️ You cannot edit or overwrite a document already signed by a lower-level user.");
-        setLoading(false);
-        return;
-      }
-
       // Check if all signatures complete
       const allSignaturesComplete = placeholders
         .filter((p) => /^signature\d*$/i.test(p))

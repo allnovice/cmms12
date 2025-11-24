@@ -80,10 +80,11 @@ export default function DynamicFields({
               value={formValues[p] ?? ""}
               onChange={(e) => handleChange(p, e.target.value)}
               readOnly={
-                isReadOnly ||
-                (selectedForm?.status && selectedForm.status !== "pending") ||
-                (isAutoFilledField && isSigned)
-              }
+  isReadOnly ||
+  (selectedForm?.status && selectedForm.status !== "pending") ||
+  formValues["signature1"] ||   // 🔴 NEW → lock normal fields after L1 signs
+  (isAutoFilledField && isSigned)
+}
             />
           </div>
         );
