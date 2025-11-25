@@ -1,0 +1,53 @@
+/* Server Status Component */
+.server-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--text-color);
+}
+
+.server-status .server-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.server-status .server-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.server-status .status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Dot colors */
+.server-status .status-dot.online {
+  background-color: #4ade80; /* green-400 */
+}
+
+.server-status .status-dot.offline {
+  background-color: #f87171; /* red-400 */
+}
+
+/* Note below server list */
+.server-status .server-note {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .server-status .server-list {
+    gap: 1rem;
+  }
+}

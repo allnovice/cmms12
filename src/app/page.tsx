@@ -3,8 +3,8 @@ import DashboardLayout from "./DashboardLayout";
 export default function HomePage() {
   return (
     <DashboardLayout>
-      <h2>Welcome to the Dashboard</h2>
-      <p>This is your home page content.</p>
+      {/* This is the required children */}
+      <div />
     </DashboardLayout>
   );
 }
