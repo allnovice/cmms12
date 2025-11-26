@@ -1,28 +1,43 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { db } from "@/firebase";
+import { Timestamp } from "firebase/firestore";
 
 interface Asset {
   uid: string;
-  createdAt: string; // ISO string
-  name?: string; // optional, you can add more fields
+  createdAt: Timestamp;
+  article?: string;
+  description?: string;
 }
 
 export default function LatestAsset() {
   const [latest, setLatest] = useState<Asset | null>(null);
 
   useEffect(() => {
-    const fetchLatestAsset = async () => {
+    const fetchLatest = async () => {
       try {
-        const res = await fetch("/api/assets?sort=desc&limit=1"); // adjust your API
-        const data: Asset[] = await res.json();
-        if (data.length) setLatest(data[0]);
+        const ref = collection(db, "assets");
+
+        // Sort by Firestore Timestamp (desc) → newest first
+        const q = query(ref, orderBy("createdAt", "desc"), limit(1));
+
+        const snap = await getDocs(q);
+
+        if (!snap.empty) {
+          const doc = snap.docs[0];
+          setLatest({
+            uid: doc.id,
+            ...(doc.data() as any),
+          });
+        }
       } catch (err) {
-        console.error("Failed to fetch latest asset:", err);
+        console.error("Error fetching latest asset:", err);
       }
     };
 
-    fetchLatestAsset();
+    fetchLatest();
   }, []);
 
   if (!latest) return <div>Loading latest asset...</div>;
@@ -30,7 +45,23 @@ export default function LatestAsset() {
   return (
     <div className="latest-asset">
       <strong>Latest Asset:</strong> {latest.uid} <br />
-      <small>Created At: {new Date(latest.createdAt).toLocaleString()}</small>
+
+      <small>
+        Created At:{" "}
+        {latest.createdAt.toDate().toLocaleString()}
+      </small>
+
+      {latest.article && (
+        <div>
+          <small>Article: {latest.article}</small>
+        </div>
+      )}
+
+      {latest.description && (
+        <div>
+          <small>Description: {latest.description}</small>
+        </div>
+      )}
     </div>
   );
 }

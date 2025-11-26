@@ -1,0 +1,84 @@
+/* page.css — for AssetsPage (theme-aware) */
+
+/* Scrollable wrapper */
+.table-wrapper {
+max-height: 500px;
+overflow-y: auto;
+border: 1px solid var(--border-color, rgba(0,0,0,0.1));
+border-radius: 8px;
+background-color: var(--card-bg);
+box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Table */
+.users-table {
+width: 100%;
+border-collapse: collapse;
+font-size: 0.95rem;
+color: var(--text-color);
+}
+
+.users-table th,
+.users-table td {
+border: 1px solid var(--border-color, rgba(0,0,0,0.1));
+padding: 0.5rem 0.75rem;
+text-align: left;
+}
+
+.users-table th {
+background-color: var(--header-bg);
+color: var(--header-text);
+position: sticky;
+top: 0;
+z-index: 10;
+}
+
+.users-table tbody tr:hover {
+background-color: var(--hover-bg, rgba(0,0,0,0.05));
+}
+
+/* Center text helper */
+.text-center {
+text-align: center;
+}
+
+/* Pin button */
+.locate-btn {
+background: none;
+border: none;
+color: #3b82f6;
+cursor: pointer;
+transition: color 0.2s, transform 0.2s;
+}
+
+.locate-btn:hover {
+color: #1e40af;
+transform: scale(1.1);
+}
+
+/* Loading */
+.loading-text {
+text-align: center;
+padding: 2rem;
+font-size: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+.users-table th,
+.users-table td {
+font-size: 0.85rem;
+padding: 0.4rem 0.5rem;
+}
+}
+
+/* Theme extensions — extend your globals.css with these */
+html.light {
+--border-color: rgba(0,0,0,0.1);
+--hover-bg: rgba(0,0,0,0.05);
+}
+
+html.dark {
+--border-color: rgba(255,255,255,0.1);
+--hover-bg: rgba(255,255,255,0.05);
+}

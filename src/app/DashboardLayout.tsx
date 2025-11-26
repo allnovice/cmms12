@@ -10,6 +10,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <ServerStatus />
 
       {/* Latest asset */}
+      <LatestAsset />
 
       {/* Page content */}
       <main>{children}</main>
