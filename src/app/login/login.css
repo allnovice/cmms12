@@ -1,12 +1,14 @@
 /* login.css - Minimal Flat Version */
 
 /* Fullscreen container */
+/* Fullscreen container */
 .login-container {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column; /* stack children vertically */
+  justify-content: center; /* center vertically in viewport */
+  align-items: center;     /* center horizontally */
   min-height: 100vh;
-  background-color: var(--card-bg); /* theme-aware */
+  background-color: var(--card-bg);
   color: var(--text-color);
   font-family: inherit;
   padding: 1rem;
@@ -114,4 +116,25 @@
   outline: none;
   box-shadow: none;
   background: transparent;
+}
+
+/* Logo background for login container */
+/* Logo above the card, centered, auto width */
+@keyframes spinAnim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+.login-logo {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  margin-bottom: 1.5rem;
+  transition: transform 0.3s ease; /* smooth stop effect */
+}
+
+/* When spinning */
+.login-logo.spin {
+  animation: spinAnim 3s linear infinite;
 }

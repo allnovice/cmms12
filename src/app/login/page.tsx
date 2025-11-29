@@ -1,25 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth, db } from "@/firebase";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp,
+  collection,
+  getDocs,
+} from "firebase/firestore";
 import "./login.css";
 
 export default function LoginPage() {
   const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // Forgot password toggle
-  const [forgotMode, setForgotMode] = useState(false);
   const [message, setMessage] = useState("");
+  const [forgotMode, setForgotMode] = useState(false);
+  const [spin, setSpin] = useState(false);
+
+  // 🔥 Company logo URL from Firestore
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+  const fetchLogo = async () => {
+    const snap = await getDocs(collection(db, "companyLogo"));
+    if (snap.empty) return;
+
+    type LogoDoc = {
+      id: string;
+      url: string;
+      uploadedAt?: any;
+    };
+
+    const items: LogoDoc[] = snap.docs.map((d) => ({
+      id: d.id,
+      ...(d.data() as any),
+    }));
+
+    items.sort((a, b) => {
+      const ta = a.uploadedAt?.toMillis?.() ?? 0;
+      const tb = b.uploadedAt?.toMillis?.() ?? 0;
+      return tb - ta;
+    });
+
+    setLogoUrl(items[0].url);
+  };
+
+  fetchLogo();
+}, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,11 +67,9 @@ export default function LoginPage() {
 
     try {
       if (forgotMode) {
-        // Forgot password: send reset link
         await sendPasswordResetEmail(auth, email);
         setMessage("✅ Password reset link sent! Check your inbox.");
       } else {
-        // Login flow
         const userCred = await signInWithEmailAndPassword(auth, email, password);
         const user = userCred.user;
 
@@ -61,9 +97,18 @@ export default function LoginPage() {
 
   return (
     <div className="login-container">
+      {/* Logo above the login card */}
+      {logoUrl && (
+        <img
+  src={logoUrl}
+  alt="Company Logo"
+  className={`login-logo ${spin ? "spin" : ""}`}
+  onClick={() => setSpin(!spin)}  // tap to spin/unspin
+         />
+      )}
+
       <div className="login-card">
         <form onSubmit={handleSubmit} className="login-form">
-          {/* Email input used in both modes */}
           <input
             type="email"
             placeholder="Email"
@@ -72,7 +117,6 @@ export default function LoginPage() {
             required
           />
 
-          {/* Password only in login mode */}
           {!forgotMode && (
             <input
               type="password"
@@ -83,17 +127,14 @@ export default function LoginPage() {
             />
           )}
 
-          {/* Error / success messages */}
           {error && <p className="error-text">{error}</p>}
           {message && <p className="reset-message">{message}</p>}
 
-          {/* Main button */}
           <button type="submit" disabled={loading}>
             {loading ? "Processing..." : forgotMode ? "Send Link" : "Login"}
           </button>
         </form>
 
-        {/* Toggle link */}
         <button
           type="button"
           className="forgot-btn"

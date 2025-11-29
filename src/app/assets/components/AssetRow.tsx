@@ -13,6 +13,7 @@ type Props = {
   users: User[];
   highlight: boolean;
   updating: boolean;
+  visibleColumns: { [key: string]: boolean };
   onAssignUser: (assetId: string, uid: string) => void;
   onSetOffice: (assetId: string, officeId: string) => void;
 };
@@ -23,6 +24,7 @@ export default function AssetRow({
   users,
   highlight,
   updating,
+  visibleColumns,
   onAssignUser,
   onSetOffice,
 }: Props) {
@@ -34,43 +36,49 @@ export default function AssetRow({
         <LocateButton asset={asset} />
       </td>
 
-      <td>
-        <button
-  className="asset-link"
-  onClick={() => router.push(`/assets/${asset.id}`)}
->
-  {asset.article || "-"}
-</button>
-      </td>
+      {visibleColumns["article"] && (
+        <td>
+          <button
+            className="asset-link"
+            onClick={() => router.push(`/assets/${asset.id}`)}
+          >
+            {asset.article || "-"}
+          </button>
+        </td>
+      )}
 
-      <td>{asset.typeOfEquipment || "-"}</td>
-      <td>{asset.description || "-"}</td>
-      <td>{asset.propertyNumber || "-"}</td>
-      <td>{asset.serialNumber || "-"}</td>
-      <td>
-        {asset.acquisitionDate
-          ? new Date(asset.acquisitionDate.seconds * 1000).toLocaleDateString()
-          : "-"}
-      </td>
-      <td>{asset.acquisitionValue || "-"}</td>
-
-      <td>
-        <UserSelect
-          value={asset.assignedTo || ""}
-          users={users}
-          onChange={(uid) => onAssignUser(asset.id, uid)}
-          disabled={updating}
-        />
-      </td>
-
-      <td>
-        <OfficeSelect
-          value={offices.find((o) => o.name === asset.location)?.id || ""}
-          offices={offices}
-          onChange={(officeId) => onSetOffice(asset.id, officeId)}
-          disabled={updating}
-        />
-      </td>
+      {visibleColumns["typeOfEquipment"] && <td>{asset.typeOfEquipment || "-"}</td>}
+      {visibleColumns["description"] && <td>{asset.description || "-"}</td>}
+      {visibleColumns["propertyNumber"] && <td>{asset.propertyNumber || "-"}</td>}
+      {visibleColumns["serialNumber"] && <td>{asset.serialNumber || "-"}</td>}
+      {visibleColumns["acquisitionDate"] && (
+        <td>
+          {asset.acquisitionDate
+            ? new Date(asset.acquisitionDate.seconds * 1000).toLocaleDateString()
+            : "-"}
+        </td>
+      )}
+      {visibleColumns["acquisitionValue"] && <td>{asset.acquisitionValue || "-"}</td>}
+      {visibleColumns["assignedTo"] && (
+        <td>
+          <UserSelect
+            value={asset.assignedTo || ""}
+            users={users}
+            onChange={uid => onAssignUser(asset.id, uid)}
+            disabled={updating}
+          />
+        </td>
+      )}
+      {visibleColumns["office"] && (
+        <td>
+          <OfficeSelect
+            value={offices.find(o => o.name === asset.location)?.id || ""}
+            offices={offices}
+            onChange={officeId => onSetOffice(asset.id, officeId)}
+            disabled={updating}
+          />
+        </td>
+      )}
     </tr>
   );
 }
