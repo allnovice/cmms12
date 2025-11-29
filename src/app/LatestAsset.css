@@ -1,0 +1,111 @@
+/* CONTAINER */
+.latest-assets-container {
+  margin-top: 1rem;
+  color: var(--text-color);
+}
+
+.title {
+  font-weight: bold;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+
+/* HORIZONTAL SWIPE AREA */
+.assets-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+  scroll-snap-type: x mandatory;
+}
+
+/* Smooth + subtle scrollbar */
+.assets-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.assets-scroll::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.3);
+  border-radius: 3px;
+}
+
+/* ASSET CARD */
+.asset-card {
+  min-width: 260px;
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  border-radius: 10px;
+  padding: 1rem;
+  scroll-snap-align: start;
+  flex-shrink: 0;
+
+  /* Match dashboard card shadow */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+html.dark .asset-card {
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+
+.asset-header {
+  font-weight: bold;
+  font-size: 15px;
+  margin-bottom: 6px;
+  color: var(--text-color);
+}
+
+/* META TEXT INSIDE CARD */
+.asset-meta small {
+  display: block;
+  opacity: 0.8;
+  margin-bottom: 2px;
+}
+
+/* PHOTO GRID INSIDE CARD */
+.photo-grid {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-top: 10px;
+}
+
+.photo-grid::-webkit-scrollbar {
+  height: 4px;
+}
+.photo-grid::-webkit-scrollbar-thumb {
+  background: rgba(150,150,150,0.3);
+  border-radius: 2px;
+}
+
+.photo {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+html.dark .photo {
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .asset-card {
+    min-width: 220px;
+    padding: 0.75rem;
+    border-radius: 8px;
+  }
+
+  .title {
+    font-size: 0.95rem;
+  }
+
+  .photo {
+    width: 65px;
+    height: 65px;
+  }
+}

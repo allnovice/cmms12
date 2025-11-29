@@ -5,63 +5,77 @@ import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "@/firebase";
 import { Timestamp } from "firebase/firestore";
 
+import "./LatestAsset.css"; // <--- CSS here
+
 interface Asset {
   uid: string;
   createdAt: Timestamp;
   article?: string;
   description?: string;
+  photoUrls?: string[];
 }
 
 export default function LatestAsset() {
-  const [latest, setLatest] = useState<Asset | null>(null);
+  const [latest, setLatest] = useState<Asset[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchLatest = async () => {
       try {
         const ref = collection(db, "assets");
-
-        // Sort by Firestore Timestamp (desc) → newest first
-        const q = query(ref, orderBy("createdAt", "desc"), limit(1));
+        const q = query(ref, orderBy("createdAt", "desc"), limit(5));
 
         const snap = await getDocs(q);
 
-        if (!snap.empty) {
-          const doc = snap.docs[0];
-          setLatest({
-            uid: doc.id,
-            ...(doc.data() as any),
-          });
-        }
+        const items: Asset[] = snap.docs.map((doc) => ({
+          uid: doc.id,
+          ...(doc.data() as any),
+        }));
+
+        setLatest(items);
       } catch (err) {
-        console.error("Error fetching latest asset:", err);
+        console.error("Error fetching latest assets:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchLatest();
   }, []);
 
-  if (!latest) return <div>Loading latest asset...</div>;
+  if (loading) return <div>Loading latest assets...</div>;
 
   return (
-    <div className="latest-asset">
-      <strong>Latest Asset:</strong> {latest.uid} <br />
+    <div className="latest-assets-container">
+      <h3 className="title">Latest 5 Assets</h3>
 
-      <small>
-        Created At:{" "}
-        {latest.createdAt.toDate().toLocaleString()}
-      </small>
+      {/* Horizontal swipe area */}
+      <div className="assets-scroll">
+        {latest.map((asset) => (
+          <div key={asset.uid} className="asset-card">
+            <div className="asset-header">{asset.uid}</div>
 
-      {latest.article && (
-        <div>
-          <small>Article: {latest.article}</small>
-        </div>
-      )}
+            <div className="asset-meta">
+              <small>
+                Created: {asset.createdAt?.toDate().toLocaleString()}
+              </small>
+              {asset.article && <small>Article: {asset.article}</small>}
+              {asset.description && (
+                <small>Description: {asset.description}</small>
+              )}
+            </div>
 
-      {latest.description && (
-        <div>
-          <small>Description: {latest.description}</small>
-        </div>
-      )}
+            {/* Photos (static inside asset) */}
+         {Array.isArray(asset.photoUrls) && asset.photoUrls.length > 0 && (
+  <div className="photo-grid">
+    {asset.photoUrls.map((url, i) => (
+      <img key={i} src={url} alt="asset" className="photo" />
+    ))}
+  </div>
+)}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

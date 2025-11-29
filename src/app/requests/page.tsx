@@ -13,6 +13,38 @@ import "./page.css";
 export default function RequestsPage() {
   const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
   const { user } = useAuth();
+
+  // Check profile completeness
+  const missingProfile =
+    !user?.fullname ||
+    !user?.designation ||
+    !user?.signature;
+
+  if (missingProfile) {
+    return (
+      <div className="requests-page">
+        <h2>Templates</h2>
+
+        <div className="profile-warning">
+          <strong>⚠️ Complete your profile</strong>
+          <p>Your profile is incomplete. Please ensure you have:</p>
+          <ul>
+            <li>Full Name</li>
+            <li>Designation</li>
+            <li>Signature</li>
+          </ul>
+
+          <button
+            className="update-profile-btn"
+            onClick={() => (window.location.href = "/settings")}
+          >
+            Go to Profile
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const forms = useForms(SERVER_URL);
   const { submissions, loading: loadingSubs } = useSubmissions();
 
@@ -44,6 +76,7 @@ export default function RequestsPage() {
       )}
 
       <h2>Submissions</h2>
+
       <SubmissionsTable
         submissions={submissions}
         loading={loadingSubs}

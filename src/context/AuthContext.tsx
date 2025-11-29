@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 
 const AuthContext = createContext<any>(null);
 export const useAuth = () => useContext(AuthContext);
@@ -13,32 +13,38 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
         setUser(null);
         setLoading(false);
         return;
       }
 
-      try {
-        // fetch Firestore user doc
-        const docRef = doc(db, "users", currentUser.uid);
-        const docSnap = await getDoc(docRef);
+      const userRef = doc(db, "users", currentUser.uid);
 
-        if (docSnap.exists()) {
-          setUser({ ...currentUser, ...docSnap.data() }); // merge Auth + Firestore fields
+      // 🔥 REAL-TIME listener for user profile updates
+      const unsubUser = onSnapshot(userRef, (snap) => {
+        if (snap.exists()) {
+          setUser({
+            uid: currentUser.uid,
+            email: currentUser.email,
+            ...snap.data(),
+          });
         } else {
-          setUser(currentUser);
+          // fallback: minimal auth user
+          setUser({
+            uid: currentUser.uid,
+            email: currentUser.email,
+          });
         }
-      } catch (err) {
-        console.error("Failed to fetch user doc:", err);
-        setUser(currentUser);
-      }
 
-      setLoading(false);
+        setLoading(false);
+      });
+
+      return () => unsubUser();
     });
 
-    return () => unsub();
+    return () => unsubAuth();
   }, []);
 
   return (

@@ -16,8 +16,8 @@ export default function ServerStatus() {
       }
     };
 
-    checkServer(`${process.env.NEXT_PUBLIC_SERVER_URL}/`, setNotifications);
-    checkServer(`${process.env.NEXT_PUBLIC_SERV_URL2}/`, setForms);
+    checkServer(`${process.env.NEXT_PUBLIC_SERV_URL2}/`, setNotifications);
+    checkServer(`${process.env.NEXT_PUBLIC_SERVER_URL}/`, setForms);
   }, []);
 
   return (
