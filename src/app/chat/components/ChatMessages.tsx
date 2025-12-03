@@ -1,4 +1,6 @@
-import React, { useEffect } from "react"; // add useEffect here
+"use client";
+
+import React, { useEffect } from "react";
 import { Message, User } from "../chatTypesAndHooks";
 
 interface ChatMessagesProps {
@@ -16,40 +18,73 @@ export default function ChatMessages({
   containerRef,
   loadingMessages,
 }: ChatMessagesProps) {
+
   const getUser = (uid: string) => allUsers.find((u) => u.uid === uid);
 
+  // ---------------------------------------------------------
+  // Username + Arrow rules
+  // ---------------------------------------------------------
   const getUsernameAndArrow = (msg: Message) => {
-    if (!currentUser) return { username: null, arrow: null, color: "#000" };
+    if (!currentUser) return { username: null, arrow: null, color: "#000", prefixLeft: false };
+
     const sender = getUser(msg.senderUid || "");
     const recipient = msg.recipientUid ? getUser(msg.recipientUid) : null;
 
     const senderName = sender?.fullname.split(" ")[0] || "Unknown";
     const recipientName = recipient?.fullname.split(" ")[0] || "Unknown";
 
-    if (msg.anon) return { username: "?", arrow: ":", color: "#888" };
+    // ----- Anonymous general message -----
+    if (msg.anon) {
+      return { username: "?", arrow: ":", color: "#888", prefixLeft: true };
+    }
 
+    // ----- PMs (KEEP AS-IS) -----
     if (msg.recipientUid) {
       if (msg.senderUid === currentUser.uid) {
-        return { username: recipientName, arrow: ">", color: recipient?.pinColor || "#000" };
+        // Your outgoing PM
+        return {
+          username: recipientName,
+          arrow: ">",
+          color: recipient?.pinColor || "#000",
+          prefixLeft: false, // stays on RIGHT (PM behavior)
+        };
       }
       if (msg.recipientUid === currentUser.uid) {
-        return { username: senderName, arrow: "<", color: sender?.pinColor || "#000" };
+        // Incoming PM
+        return {
+          username: senderName,
+          arrow: "<",
+          color: sender?.pinColor || "#000",
+          prefixLeft: false, // stays on RIGHT (PM behavior)
+        };
       }
     }
 
+    // ----- General messages from other users -----
     if (msg.senderUid !== currentUser.uid) {
-      return { username: senderName, arrow: ":", color: sender?.pinColor || "#000" };
+      return {
+        username: senderName,
+        arrow: ":",
+        color: sender?.pinColor || "#000",
+        prefixLeft: true, // FIX: prefix on LEFT
+      };
     }
 
-    return { username: null, arrow: null, color: "#000" };
+    // ----- Your own general messages (no prefix) -----
+    return { username: null, arrow: null, color: "#000", prefixLeft: false };
   };
 
-  // 🔹 Auto-scroll effect
+  // ---------------------------------------------------------
+  // Auto-scroll to bottom
+  // ---------------------------------------------------------
   useEffect(() => {
     if (!containerRef.current) return;
     containerRef.current.scrollTop = containerRef.current.scrollHeight;
   }, [messages]);
 
+  // ---------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------
   return (
     <div ref={containerRef} className="chat-messages">
       {loadingMessages ? (
@@ -58,7 +93,7 @@ export default function ChatMessages({
         <p className="chat-empty">No messages yet 👋</p>
       ) : (
         messages.map((msg) => {
-          const { username, arrow, color } = getUsernameAndArrow(msg);
+          const { username, arrow, color, prefixLeft } = getUsernameAndArrow(msg);
           const isSystemHelp = msg.senderUid === "system-help";
 
           return (
@@ -69,13 +104,23 @@ export default function ChatMessages({
               } ${msg.recipientUid ? "pm" : ""}`}
             >
               <div className="chat-message-flex">
+
+                {/* --------------- PREFIX LEFT (General + Anon) --------------- */}
+                {prefixLeft && username && arrow && (
+                  <span className="chat-message-prefix" style={{ color }}>
+                    {username}{arrow}&nbsp;
+                  </span>
+                )}
+
+                {/* ------------------------- MESSAGE TEXT ---------------------- */}
                 <span className="chat-message-content">
                   {isSystemHelp
                     ? msg.content.split("\n").map((line, i) => <div key={i}>{line}</div>)
                     : msg.content}
                 </span>
 
-                {!isSystemHelp && username && arrow && (
+                {/* --------------- PREFIX RIGHT (PMs) --------------- */}
+                {!prefixLeft && username && arrow && !isSystemHelp && (
                   <>
                     <span className="chat-message-arrow">{arrow}</span>
                     <span className="chat-message-user" style={{ color }}>
@@ -83,6 +128,7 @@ export default function ChatMessages({
                     </span>
                   </>
                 )}
+
               </div>
             </div>
           );
