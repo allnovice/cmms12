@@ -56,6 +56,7 @@ export const useUsers = () => {
 };
 
 // 🔹 Messages hook
+// 🔹 Messages hook (with auto-clean)
 export const useChatMessages = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(true);
@@ -66,49 +67,80 @@ export const useChatMessages = () => {
 
     let firstLoad = true;
 
-    const handleMessages = (snap: any) => {
-      const data = snap.val() || {};
-      return Object.entries(data).map(([id, val]: any) => ({
-        id,
-        senderUid: val.senderUid,
-        recipientUid: val.recipientUid || null,
-        content: val.content,
-        timestamp: val.timestamp || 0,
-      }));
-    };
+    const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+    const TEN_MIN = 10 * 60 * 1000;
 
-    const handleAnon = (snap: any) => {
-      const data = snap.val() || {};
+    // 🔹 CLEAN + RETURN general/pm messages
+    const handleMessages = (snap: any) => {
       const now = Date.now();
-      const TEN_MIN = 10 * 60 * 1000;
+      const data = snap.val() || {};
       const list: Message[] = [];
 
       Object.entries(data).forEach(([id, val]: any) => {
-        if (now - val.timestamp > TEN_MIN) {
-          remove(rtdbRef(rtdb, `anonmsgs/${id}`));
+        const ts = val.timestamp || 0;
+
+        if (now - ts > THREE_DAYS) {
+          // auto-delete old messages
+          remove(rtdbRef(rtdb, `messages/${id}`));
         } else {
-          list.push({ id, content: val.content, timestamp: val.timestamp, anon: true });
+          list.push({
+            id,
+            senderUid: val.senderUid,
+            recipientUid: val.recipientUid || null,
+            content: val.content,
+            timestamp: ts,
+          });
         }
       });
 
       return list;
     };
 
+    // 🔹 CLEAN + RETURN anon messages
+    const handleAnon = (snap: any) => {
+      const now = Date.now();
+      const data = snap.val() || {};
+      const list: Message[] = [];
+
+      Object.entries(data).forEach(([id, val]: any) => {
+        const ts = val.timestamp || 0;
+
+        if (now - ts > TEN_MIN) {
+          remove(rtdbRef(rtdb, `anonmsgs/${id}`));
+        } else {
+          list.push({
+            id,
+            content: val.content,
+            timestamp: ts,
+            anon: true,
+          });
+        }
+      });
+
+      return list;
+    };
+
+    // 🔹 Subscribe general/pm
     const unsubMsgs = onValue(refMsgs, (snap) => {
       const generalPM = handleMessages(snap);
+
       setMessages((prev) => {
         const anon = prev.filter((m) => m.anon);
         const combined = [...anon, ...generalPM].sort((a, b) => a.timestamp - b.timestamp);
+
         if (firstLoad) setLoadingMessages(false);
         return combined;
       });
     });
 
+    // 🔹 Subscribe anon
     const unsubAnon = onValue(refAnon, (snap) => {
       const anon = handleAnon(snap);
+
       setMessages((prev) => {
         const generalPM = prev.filter((m) => !m.anon);
         const combined = [...generalPM, ...anon].sort((a, b) => a.timestamp - b.timestamp);
+
         if (firstLoad) setLoadingMessages(false);
         return combined;
       });

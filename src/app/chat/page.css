@@ -5,7 +5,7 @@
   height: 400px; /* fixed height */
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 8px;
-  padding: 12px;
+  padding: 6px;
   background: var(--card-bg);
   color: var(--text-color);
 }
@@ -31,7 +31,7 @@
 /* Each message line */
 .chat-message {
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1;
   word-break: break-word;
   color: var(--text-color);
 }
@@ -126,4 +126,14 @@ html.dark .chat-suggestions {
 
 html.dark .chat-suggestion-item:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.chat-notes {
+  font-size: 0.65rem;
+  color: #777;
+  margin-top: 6px;
+  margin-bottom: 0px;
+  padding: 6px 6px;
+  border-top: 1px solid #ddd;
+  line-height: .2;
 }

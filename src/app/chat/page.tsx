@@ -17,6 +17,7 @@ import { useSearchParams } from "next/navigation";
 import "./page.css";
 import useSurvey from "./survey/useSurvey";
 import { helpText } from "./helpConfig";
+import ChatNotes from "./components/ChatNotes";
 
 export default function ChatPage() {
   const currentUserFirebase = useAuth();
@@ -202,6 +203,8 @@ export default function ChatPage() {
         </div>
       )}
     </div>
+<ChatNotes />
   </div>
+
 );
 }
