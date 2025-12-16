@@ -6,6 +6,7 @@ import { db, auth } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { FiMapPin } from "react-icons/fi";
 import "./page.css";
+import UserModal from "../../components/UserModal";
 
 type User = {
   id: string;
@@ -224,29 +225,7 @@ export default function UsersPage() {
 
       {/* User details modal */}
       {selectedUser && (
-        <div className="modal-overlay" onClick={closeUser}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-            <button className="modal-close" onClick={closeUser}>×</button>
-            <h3>{selectedUser.fullname}</h3>
-            <div className="modal-row"><strong>Email:</strong> {selectedUser.email || "-"}</div>
-            <div className="modal-row"><strong>Contact:</strong> {selectedUser.contact || "-"}</div>
-            <div className="modal-row"><strong>Division:</strong> {selectedUser.division || "-"}</div>
-            <div className="modal-row"><strong>Designation:</strong> {selectedUser.designation || "-"}</div>
-            <div className="modal-row"><strong>Role:</strong> {selectedUser.role || "-"}</div>
-            <div className="modal-row"><strong>Signatory Level:</strong> {selectedUser.signatoryLevel || "-"}</div>
-            <div className="modal-row"><strong>Assigned Assets:</strong>
-              {selectedUser.assignedAssets && selectedUser.assignedAssets.length ? (
-                <ul className="assigned-list">
-                  {selectedUser.assignedAssets.map((id: string) => (
-                    <li key={id}><a href={`/assets/${id}`} onClick={(e) => { e.preventDefault(); router.push(`/assets/${id}`); }}>{id}</a></li>
-                  ))}
-                </ul>
-              ) : (
-                <span> None</span>
-              )}
-            </div>
-          </div>
-        </div>
+        <UserModal user={selectedUser} onClose={closeUser} />
       )}
     </div>
   );
