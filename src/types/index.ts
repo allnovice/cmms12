@@ -28,4 +28,5 @@ export type Office = {
 export type User = {
   uid: string;
   fullname: string;
+  assignedAssets?: string[];
 };

@@ -109,6 +109,23 @@ export default function UsersPage() {
     }
   };
 
+  // Open user details modal
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const openUser = async (uid: string) => {
+    try {
+      const snap = await getDoc(doc(db, "users", uid));
+      if (!snap.exists()) {
+        alert("User not found");
+        return;
+      }
+      setSelectedUser({ uid, ...(snap.data() as any) });
+    } catch (err) {
+      console.error("Error fetching user:", err);
+    }
+  };
+
+  const closeUser = () => setSelectedUser(null);
+
   // Update user role or signatory level
   const handleChange = async (uid: string, field: "role" | "signatoryLevel", value: string) => {
     if (currentUserRole !== "admin") return; // Only admin can edit
@@ -158,7 +175,11 @@ export default function UsersPage() {
                   <FiMapPin size={18} />
                 </button>
               </td>
-              <td>{u.fullname ?? "-"}</td>
+              <td>
+                <button className="user-link" onClick={() => openUser(u.id)}>
+                  {u.fullname ?? "-"}
+                </button>
+              </td>
               <td>{u.employeeNumber ?? "-"}</td>
               <td>{u.division ?? "-"}</td>
               <td>{u.designation ?? "-"}</td>
@@ -200,6 +221,33 @@ export default function UsersPage() {
           ))}
         </tbody>
       </table>
+
+      {/* User details modal */}
+      {selectedUser && (
+        <div className="modal-overlay" onClick={closeUser}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <button className="modal-close" onClick={closeUser}>×</button>
+            <h3>{selectedUser.fullname}</h3>
+            <div className="modal-row"><strong>Email:</strong> {selectedUser.email || "-"}</div>
+            <div className="modal-row"><strong>Contact:</strong> {selectedUser.contact || "-"}</div>
+            <div className="modal-row"><strong>Division:</strong> {selectedUser.division || "-"}</div>
+            <div className="modal-row"><strong>Designation:</strong> {selectedUser.designation || "-"}</div>
+            <div className="modal-row"><strong>Role:</strong> {selectedUser.role || "-"}</div>
+            <div className="modal-row"><strong>Signatory Level:</strong> {selectedUser.signatoryLevel || "-"}</div>
+            <div className="modal-row"><strong>Assigned Assets:</strong>
+              {selectedUser.assignedAssets && selectedUser.assignedAssets.length ? (
+                <ul className="assigned-list">
+                  {selectedUser.assignedAssets.map((id: string) => (
+                    <li key={id}><a href={`/assets/${id}`} onClick={(e) => { e.preventDefault(); router.push(`/assets/${id}`); }}>{id}</a></li>
+                  ))}
+                </ul>
+              ) : (
+                <span> None</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

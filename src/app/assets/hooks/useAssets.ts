@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "@/firebase";
 import { Asset, Office, User } from "@/types";
 
@@ -21,15 +21,41 @@ export default function useAssets() {
 
       setAssets(assetSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Asset)));
       setOffices(officeSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Office)));
-      setUsers(userSnap.docs.map((d) => ({ uid: d.id, fullname: d.data().fullname || "Unnamed" })));
+      setUsers(userSnap.docs.map((d) => ({ uid: d.id, fullname: d.data().fullname || "Unnamed", assignedAssets: (d.data() as any).assignedAssets || [] })));
     };
     fetchData();
   }, []);
 
   const handleAssignUser = async (assetId: string, uid: string) => {
     setUpdating(assetId);
+    const asset = assets.find((a) => a.id === assetId);
+    const previousUid = asset?.assignedTo;
+
+    // update asset doc
     await updateDoc(doc(db, "assets", assetId), { assignedTo: uid });
+
+    // update users: remove from previous user and add to new user
+    if (previousUid && previousUid !== uid) {
+      await updateDoc(doc(db, "users", previousUid), { assignedAssets: arrayRemove(assetId) });
+    }
+    if (uid) {
+      await updateDoc(doc(db, "users", uid), { assignedAssets: arrayUnion(assetId) });
+    }
+
+    // update local state
     setAssets((prev) => prev.map((a) => (a.id === assetId ? { ...a, assignedTo: uid } : a)));
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.uid === uid) {
+          return { ...u, assignedAssets: Array.from(new Set([...(u.assignedAssets || []), assetId])) } as typeof u;
+        }
+        if (previousUid && u.uid === previousUid) {
+          return { ...u, assignedAssets: (u.assignedAssets || []).filter((id) => id !== assetId) } as typeof u;
+        }
+        return u;
+      })
+    );
+
     setUpdating(null);
   };
 
