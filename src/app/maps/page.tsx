@@ -13,6 +13,7 @@ import {
 import { db, auth } from "@/firebase";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import "./MapViewPage.css";
 import { useSearchParams, useRouter } from "next/navigation";
 
 type Asset = {
@@ -53,6 +54,8 @@ export default function MapViewPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [allPins, setAllPins] = useState<UserPin[]>([]);
+  const [showAssets, setShowAssets] = useState(true);
+  const [showUsers, setShowUsers] = useState(true);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const didFlyRef = useRef(false); // ✅ Prevents double fly
 
@@ -85,7 +88,7 @@ export default function MapViewPage() {
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    mapRef.current = new maplibregl.Map({
+    const map = new maplibregl.Map({
       container: containerRef.current,
       style: {
         version: 8,
@@ -110,7 +113,15 @@ export default function MapViewPage() {
       zoom: DEFAULT_ZOOM,
     });
 
-    mapRef.current.addControl(new maplibregl.NavigationControl());
+    map.addControl(new maplibregl.NavigationControl());
+    mapRef.current = map;
+
+    return () => {
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+      map.remove();
+      mapRef.current = null;
+    };
   }, []);
 
   // --- Fetch assets ---
@@ -171,69 +182,73 @@ useEffect(() => {
   markersRef.current = [];
 
   // --- Office markers (same as before) ---
-  offices.forEach((office) => {
-    const officeAssets = assets.filter((a) => a.location === office.name);
+  if (showAssets) {
+    offices.forEach((office) => {
+      const officeAssets = assets.filter((a) => a.location === office.name);
 
-    const popupEl = document.createElement("div");
-    popupEl.style.minWidth = "150px";
+      const popupEl = document.createElement("div");
+      popupEl.style.minWidth = "150px";
 
-    const title = document.createElement("strong");
-    title.textContent = office.name;
-    popupEl.appendChild(title);
-    popupEl.appendChild(document.createElement("br"));
+      const title = document.createElement("strong");
+      title.textContent = office.name;
+      popupEl.appendChild(title);
+      popupEl.appendChild(document.createElement("br"));
 
-    if (officeAssets.length) {
-      officeAssets.forEach((a) => {
-        const div = document.createElement("div");
-        div.style.marginTop = "4px";
+      if (officeAssets.length) {
+        officeAssets.forEach((a) => {
+          const div = document.createElement("div");
+          div.style.marginTop = "4px";
 
-        const link = document.createElement("a");
-        link.href = `/assets?highlight=${a.id}`;
-        link.textContent = `📦 ${a.article || "(Unnamed)"}`;
-        link.addEventListener("click", (e) => {
-          e.preventDefault();
-          router.push(`/assets/${a.id}`);
+          const link = document.createElement("a");
+          link.href = `/assets?highlight=${a.id}`;
+          link.textContent = `📦 ${a.article || "(Unnamed)"}`;
+          link.addEventListener("click", (e) => {
+            e.preventDefault();
+            router.push(`/assets/${a.id}`);
+          });
+
+          div.appendChild(link);
+          popupEl.appendChild(div);
         });
+      } else {
+        const em = document.createElement("em");
+        em.textContent = "No assets";
+        popupEl.appendChild(em);
+      }
 
-        div.appendChild(link);
-        popupEl.appendChild(div);
-      });
-    } else {
-      const em = document.createElement("em");
-      em.textContent = "No assets";
-      popupEl.appendChild(em);
-    }
+      stylePopup(popupEl);
 
-    stylePopup(popupEl);
+      const marker = new maplibregl.Marker({ color: "#0078ff" })
+        .setLngLat([office.longitude, office.latitude])
+        .setPopup(new maplibregl.Popup({ offset: 25 }).setDOMContent(popupEl))
+        .addTo(map);
 
-    const marker = new maplibregl.Marker({ color: "#0078ff" })
-      .setLngLat([office.longitude, office.latitude])
-      .setPopup(new maplibregl.Popup({ offset: 25 }).setDOMContent(popupEl))
-      .addTo(map);
-
-    markersRef.current.push(marker);
-  });
+      markersRef.current.push(marker);
+    });
+  }
 
   // --- Individual asset markers ---
-  assets
-    .filter((a) => !a.location)
-    .forEach((a) => {
-      const el = document.createElement("div");
-      el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24">
+  if (showAssets) {
+    assets
+      .filter((a) => !a.location)
+      .forEach((a) => {
+        const el = document.createElement("div");
+        el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24">
         <circle cx="12" cy="12" r="10" fill="red" stroke="#fff" stroke-width="2"/>
       </svg>`;
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([a.longitude!, a.latitude!])
-        .setPopup(
-          new maplibregl.Popup({ offset: 25 }).setHTML(`
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat([a.longitude!, a.latitude!])
+          .setPopup(
+            new maplibregl.Popup({ offset: 25 }).setHTML(`
             <strong>${a.article}</strong>
             ${a.unit ? `<div>${a.unit}</div>` : ""}
             ${a.status ? `<div>Status: ${a.status}</div>` : ""}
           `)
-        )
-        .addTo(map);
-      markersRef.current.push(marker);
-    });
+          )
+          .addTo(map);
+        markersRef.current.push(marker);
+      });
+  }
 
   // --- Pre-fetch first names for user pins ---
   const fetchFirstNames = async () => {
@@ -256,63 +271,65 @@ useEffect(() => {
     return uidToName;
   };
 
-  fetchFirstNames().then((uidToName) => {
-    // --- Manual clustering ---
-    const clusterDistance = 50;
-    const clusters: { lat: number; lng: number; count: number; pins: UserPin[] }[] = [];
+  if (showUsers) {
+    fetchFirstNames().then((uidToName) => {
+      // --- Manual clustering ---
+      const clusterDistance = 50;
+      const clusters: { lat: number; lng: number; count: number; pins: UserPin[] }[] = [];
 
-    allPins.forEach((p) => {
-      const point = map.project([p.longitude, p.latitude]);
-      let added = false;
+      allPins.forEach((p) => {
+        const point = map.project([p.longitude, p.latitude]);
+        let added = false;
 
-      for (const c of clusters) {
-        const cPoint = map.project([c.lng, c.lat]);
-        const dx = point.x - cPoint.x;
-        const dy = point.y - cPoint.y;
-        if (Math.sqrt(dx * dx + dy * dy) < clusterDistance) {
-          c.pins.push(p);
-          c.count++;
-          added = true;
-          break;
+        for (const c of clusters) {
+          const cPoint = map.project([c.lng, c.lat]);
+          const dx = point.x - cPoint.x;
+          const dy = point.y - cPoint.y;
+          if (Math.sqrt(dx * dx + dy * dy) < clusterDistance) {
+            c.pins.push(p);
+            c.count++;
+            added = true;
+            break;
+          }
         }
-      }
 
-      if (!added) {
-        clusters.push({ lat: p.latitude, lng: p.longitude, count: 1, pins: [p] });
-      }
+        if (!added) {
+          clusters.push({ lat: p.latitude, lng: p.longitude, count: 1, pins: [p] });
+        }
+      });
+
+      clusters.forEach((c) => {
+        const popupEl = document.createElement("div");
+
+        if (c.count > 1) {
+          const title = document.createElement("strong");
+          title.textContent = `${c.count} Users:`;
+          popupEl.appendChild(title);
+          popupEl.appendChild(document.createElement("br"));
+
+          c.pins.forEach((p) => {
+            const div = document.createElement("div");
+            div.textContent = uidToName[p.uid] || p.uid;
+            popupEl.appendChild(div);
+          });
+        } else {
+          popupEl.textContent = `User: ${uidToName[c.pins[0].uid]}`;
+        }
+
+        stylePopup(popupEl);
+
+        // --- Use same MapLibre pin design ---
+        const color = c.count > 1 ? "orange" : c.pins[0].pinColor || "#0078ff";
+        const marker = new maplibregl.Marker({ color })
+          .setLngLat([c.lng, c.lat])
+          .setPopup(new maplibregl.Popup({ offset: 25 }).setDOMContent(popupEl))
+          .addTo(map);
+
+        markersRef.current.push(marker);
+      });
     });
-
-    clusters.forEach((c) => {
-      const popupEl = document.createElement("div");
-
-      if (c.count > 1) {
-        const title = document.createElement("strong");
-        title.textContent = `${c.count} Users:`;
-        popupEl.appendChild(title);
-        popupEl.appendChild(document.createElement("br"));
-
-        c.pins.forEach((p) => {
-          const div = document.createElement("div");
-          div.textContent = uidToName[p.uid] || p.uid;
-          popupEl.appendChild(div);
-        });
-      } else {
-        popupEl.textContent = `User: ${uidToName[c.pins[0].uid]}`;
-      }
-
-      stylePopup(popupEl);
-
-      // --- Use same MapLibre pin design ---
-      const color = c.count > 1 ? "orange" : c.pins[0].pinColor || "#0078ff";
-      const marker = new maplibregl.Marker({ color })
-        .setLngLat([c.lng, c.lat])
-        .setPopup(new maplibregl.Popup({ offset: 25 }).setDOMContent(popupEl))
-        .addTo(map);
-
-      markersRef.current.push(marker);
-    });
-  });
-}, [assets, offices, allPins]);
+  }
+}, [assets, offices, allPins, showAssets, showUsers]);
 
   // --- Fly to asset if URL has lat/lng ---
   useEffect(() => {
@@ -410,5 +427,13 @@ return () => {
 
 }, []);
 
-return <div ref={containerRef} style={{ height: "70vh", width: "100%" }} />;
+return (
+    <>
+      <div ref={containerRef} className="map-container" />
+      <div className="map-controls" style={{ marginTop: 8 }}>
+        <label><input type="checkbox" checked={showAssets} onChange={(e) => setShowAssets(e.target.checked)} /> Assets</label>
+        <label style={{ marginLeft: 12 }}><input type="checkbox" checked={showUsers} onChange={(e) => setShowUsers(e.target.checked)} /> Users</label>
+      </div>
+    </>
+  );
 }

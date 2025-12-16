@@ -70,3 +70,21 @@ html.dark .maplibregl-ctrl-group button {
     transform: scale(1);
   }
 }
+
+/* Controls below the map */
+.map-controls {
+  margin-top: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.map-controls label {
+  font-size: 0.95rem;
+  color: var(--text-color);
+  cursor: pointer;
+}
+.map-controls input[type="checkbox"] {
+  margin-right: 6px;
+  transform: scale(1.03);
+}
+
