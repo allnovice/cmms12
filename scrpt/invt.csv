@@ -1,0 +1,141 @@
+article,description,propertyNumber,unitOfMeasurement,acquisitionValue,quantityPerPropertyCard,quantityPerPhysicalCount,acquisitionDate,typeOfEquipment,remarks
+ROOE1,AirCondition Floor Standing Non-Inverter Carrier ,2019-AC-001,unit,62800,1,1,2019-04-11,Other,"Serviceable, Regional Office"
+ROOE2,"Steel Cabinet Sentry, 4 Drawers, Model: 80000DL SN: E18082450",2018-SC-001,unit,87800,1,1,2018-12-14,Other,"Serviceable, Engr. Marshal Dulagan - TMSD. NCIP IV-A"
+ROOE3,Steel Cabinet Titan Gun Safe,2018 SC-002,unit,86500,1,1,2018-12-14,Other,"Serviceable, Engr. Marshal Dulagan - TMSD. NCIP IV-A"
+ROOE4,"Photocopier Copying Machine, SHARP AR-6023N SN: 65032906",2016-CM-001,unit,79880,1,1,2016-09-10,Other,"Serviceable, Regional Office"
+ROOE5,CCTV ,2016-CCTV-001,set,58390,1,1,2016-12-16,CCTV,"Serviceable, Regional Office"
+ROOE6,"Copying Machine, Sharp AR-5620V SN: 33022378",CM 08-12-12,unit,72861,1,1,2012-01-01,Other,"Unserviceable, Regional Office"
+ROICT1,"Desktop Computer, ACER TC-1770 SN: DTBK7SP00431501SSF9600",2023-05-03-DC01-01,set,68000,1,1,2023-06-14,Desktop,"Serviceable, Helen Casitas - ORD, NCIP IV-A"
+ROICT2,"Desktop Computer, ACER TC-1770
+SN: DTBK7SP00431501AB99600",2023-05-03-DC02-01,set,68000,1,1,2023-06-14,Desktop,"Serviceable, Zenaida L. Bantilan - AFSD, NCIP IV-A"
+ROICT3,"Desktop Computer, ACER TC-1770
+SN: DTBK7SP00431501AA59600",2023-05-03-DC03-01,set,68000,1,1,2023-06-14,Desktop,"Serviceable, Lou April B. Lopez - AFSD, NCIP IV-A"
+ROICT4,"Desktop Computer, ACER TC-1770
+SN: DTBK7SP00431501AA69600",2023-05-03-DC04-01,set,68000,1,1,2023-06-14,Desktop,"Serviceable, Joylyn F. Buhong - AFSD, NCIP IV-A"
+ROICT5,"Desktop Computer, ACER TC-1770
+SN: DTBK7SP00431501ABB9600",2023-05-03-DC06-01,set,68000,1,1,2023-06-14,Desktop,"Serviceable, Zeny-Ann B. Pinkihan - TMSD, NCIP IV-A"
+ROICT6,"Desktop Computer, ACER TC-1770
+SN: DTBK7SP00431501AD09600",2023-05-03-DC07-01,set,68000,1,1,2023-06-14,Desktop,"Serviceable, Leovic D. Banosoc - TMSD, NCIP IV-A"
+ROICT7,"Desktop Computer, ACER TC-1770
+SN: DTBK7SP00431501ABD9600",2023-05-03-DC08-01,set,68000,1,1,2023-06-14,Desktop,"Serviceable, Engr. John Aldrin Perez - TMSD, NCIP IV-A"
+ROICT8,"Desktop Computer, ACER TC-1770
+SN: DTBK7SP00431501AA99600",2023-05-03-DC09-01,set,68000,1,1,2023-06-14,Desktop,"Serviceable, Darlyne C. Aguilar - AFSD, NCIP IV-A"
+ROICT9,"Laptop Computer, HP Envy Notebook 13-ba1521TX
+SN: CND2012NZX with mouse and mousepad",2022-05-03-LC01-01,unit,59100,1,1,2022-11-25,Laptop,"Serviceable, Dir. Carlos P. Buasen, Jr. - ORD, NCIP IV-A"
+ROICT10,"Desktop Computer, HP Pavillion Desktop TP01-3014d PC
+Intel Core i5 12400P 12th Gen
+with Bluetooth, Keyboard, Mouse, Webcam and Headset
+SN: CPU: 4CE219C7CM; MONITOR: 1CR22500QY",2022-05-03-DC01-01,set,61000,1,1,2022-09-23,Desktop,"Serviceable, Regional Legal Officer"
+ROICT11,"Desktop Computer, HP Pavillion Desktop TP01-3014d PC Intel Core i5 12400P 12th Gen with Bluetooth, Keyboard, Mouse, Webcam and Headset SN: CPU: 4CE219C7CH; MONITOR: 1CR1410D11",2022-05-03-DC08-01,set,61000,1,1,2022-09-23,Desktop,"Serviceable, Maria Raquel Bernardo - TMSD, NCIP IV-A"
+ROICT12,"Computer Desktop
+with Software MS Office Professional Plus
+SN: 3HKPN-VRWCM-D6YBP-T8H2P-Q3WXM",CD2018-08-044,set,60000,1,1,2018-01-23,Desktop,"Serviceable, Maria Raquel Bernardo - TMSD, NCIP IV-A"
+ROICT13,"Computer Desktop
+with Software MS Office Professional Plus
+SN: RBBM-NVXRK-QR8WJ-P6934-844DB",CD2018-08-039,set,60000,1,1,2018-01-23,Desktop,"Serviceable, Regional Office, Myka Amor G. Mirabueno"
+ROICT14,"Computer Desktop
+with MS Office Professional Intel Core i7
+SN: G9VPK-NP8YK-8HP6X-TPVK9-C7JXM",CD2018-08-046,set,90000,1,1,2018-01-23,Desktop,Unserviceable-For Disposal
+ROICT15,"Computer Desktop,  HP Elite 
+CPU SN: CZC60203RN
+Monitor Serial No. CNC53211NL
+UPS Serial No. G464F37985",DC 2016-07-01,set,58823,1,1,2016-01-01,Desktop,Unserviceable-For Disposal
+ROICT16,"NETWORK CABINET
+
+Uninterrupted Power Supply (UPS) 
+GXTRT-1000IRT2UXL
+SN: 2314810048RT10C
+
+Power Module
+RG-PA10001-P-F
+SN: R568A2218110905",2024-05-03-NC01-01,set,122436,1,1,2023-10-10,Other,"Serviceable, Regional Office"
+ROICT17,"Managed Switch
+RG-S5310-48GT4XS-P-E
+SN: GIS716C000989",2024-05-03-MS01-01,unit,257452,1,1,2023-10-10,Other,"Serviceable, Regional Office, Property Custodian"
+ROICT18,"Firewall/Sophos
+XGS2100
+SN: X21013DT7Q473B3",2024-05-03-FW01-01,unit,615600,1,1,2023-10-10,Other,"Serviceable, Regional Office, Property Custodian"
+ROICT19,"Desktop, ASUS All-in-one
+A5402WV A5402WVAK-BPC067X
+SN: S6PTCJ009716246
+with headset",2024-05-03-DC01-01,unit,68670,1,1,2024-08-15,Desktop,"Serviceable, Engr. Marshal Dulagan - TMSD. NCIP IV-A"
+ROICT20,"Desktop, ASUS All-in-one
+A5402WV A5402WVAK-BPC067X
+SN: S6PTCJ00980324E
+with headset",2024-05-03-DC02-02,unit,68670,1,1,2024-08-15,Desktop,"Serviceable, Calamba Satellite Office, Celina Carreon"
+ROICT21,"Desktop, ASUS All-in-one
+A5402WV A5402WVAK-BPC067X
+SN: S6PTCJ00970024G
+with headset",2024-05-03-DC05-01,unit,68670,1,1,2024-08-15,Desktop,"Serviceable, Regional Office, Daniel Jacinto "
+ROICT22,"Desktop, ASUS All-in-one
+A5402WV A5402WVAK-BPC067X
+SN: S6PTCJ00968424G
+with headset",2024-05-03-DC06-01,unit,68670,1,1,2024-08-15,Desktop,"Serviceable, Regional Office, Erlita Vertudez"
+ROICT23,"Desktop, ASUS All-in-one
+A5402WV A5402WVAK-BPC067X
+SN: S6PTCJ009659247
+with headset",2024-05-03-DC07-01,unit,68670,1,1,2024-08-15,Desktop,"Serviceable, Regional Office, Shalom Grace V. Mutya"
+ROICT28,"Desktop, ASUS All-in-one
+A5402WV A5402WVAK-BPC067X
+SN: S6PTCJ009756244
+with headset",2024-05-03-DC04-01,unit,68670,1,1,2024-08-15,Desktop,"Serviceable, AFSD, Erma A. Quimson"
+ROICT29,"Desktop, ASUS All-in-one
+A5402WV A5402WVAK-BPC067X
+SN: S6PTCJ009800246
+with headset",2024-05-03-DC03-01,unit,68670,1,1,2024-08-15,Desktop,"Serviceable, Regional Office"
+ROICT30,"Desktop, ASUS All-in-one
+A5402WV A5402WVAK-BPC067X
+SN: S6PTCJ008821245
+with headset",2024-05-03-DC12-01,unit,68670,1,1,2024-08-15,Desktop,"Serviceable, Regional Office, Dr. Eva Jesusa C. Arligue"
+ROICT31,"Laptop Computer, Asus ExpertBook B1402CV
+SN: S4NXCV07P279162
+with wireless mouse, bag and charger",2024-05-03-LC01-01,unit,65720,1,1,2024-08-15,Laptop,"Serviceable, Regional Office, Atty. Allan Tomas G. Lapat"
+ROICT32,"Laptop Computer, Asus ExpertBook B1402CV
+SN: S4NXCV07P336163
+with wireless mouse, bag and charger",2024-05-03-LC03-01,unit,65720,1,1,2024-08-15,Laptop,"Serviceable, Regional Office, Leovic Banosoc"
+ROICT33,"Laptop Computer, Asus ExpertBook B1402CV
+SN: S4NXCV07P32516D
+with wireless mouse, bag and charger",2024-05-03-LC04-03,unit,65720,1,1,2024-08-15,Laptop,"Serviceable, Property Custodian"
+ROICT37,"Laptop Computer, Asus ExpertBook B1402CV
+SN: 
+with wireless mouse, bag and charger",2024-05-03-LC02-01,unit,65720,1,1,2024-08-15,Laptop,"Serviceable, AFSD, Erma A. Quimson"
+ROICT38,"Laptop, Acer Travelmate KCC5NLV
+SN: NXVEVSP001712225BA7600",PIPES 2017-12-001,unit,55575,1,1,2017-12-20,Laptop,Unserviceable-For Disposal
+ROICT39,"Laptop, Acer Travelmate KCC5NLV
+SN: ",PIPES 2017-12-003,unit,55575,1,1,2017-12-20,Laptop,Unserviceable-For Disposal
+ROICT40,"Laptop, Acer Travelmate KCC5NLV
+SN: NXVEVSP001712225707600",PIPES 2017-12-004,unit,55575,1,1,2017-12-20,Laptop,Donated to TESDA
+ROICT41,"Laptop, Acer Travelmate KCC5NLV
+SN: NXVEVSP001712225D17600",PIPES 2017-12-005,unit,55575,1,1,2017-12-20,Laptop,Unserviceable-For Disposal
+ROICT42,"Laptop, Acer Travelmate KCC5NLV
+SN: NXVEVSP0017122256C7600",PIPES 2017-12-006,unit,55575,1,1,2017-12-20,Laptop,Unserviceable-For Disposal
+ROICT43,"Laptop, Acer Travelmate KCC5NLV
+SN: ",PIPES 2017-12-007,unit,55575,1,1,2017-12-20,Laptop,Unserviceable-For Disposal
+ROICT44,"Laptop, Acer Travelmate KCC5NLV
+SN: NXVEVSP0017122258A7600",PIPES 2017-12-008,unit,55575,1,1,2017-12-20,Laptop,Unserviceable-For Disposal
+ROICT45,"Laptop, Acer Travelmate KCC5NLV
+SN: NXVEVSP001712225DE7600",PIPES 2017-12-002,unit,55575,1,1,2017-12-20,Laptop,Unserviceable-For Disposal
+ROICT47,"DSLR Camera, Sony ILCE-6400L
+SN: 4931645",2025-05-03-DC01-01,unit,52650,1,1,2024-11-25,Camera,"Serviceable, Regional Office, Property Custodian"
+ROICT48,"Video Camera, Sony FDR-AX43A. SN: 3432049",2025-05-03-VC01-01,unit,53150,1,1,2024-11-25,Video Cam,"Serviceable, Regional Office, Property Custodian"
+ROICT53,"Drone, DJI Mini 4 Pro
+SN: 1581F6Z9C23C6003J3Z4",2025-05-03-DR01-01,unit,72428,1,1,2024-08-15,Other,"Serviceable, Regional Office, Property Custodian"
+ROICT54,"Photocopier Epson Workforce Pro WF-C879R
+SN: X6GR002481",2025-05-03-PM01-01,unit,180250,1,1,2024-08-15,Other,"Serviceable, Regional Office, Property Custodian"
+ROICT55,"Scanner, High Speed, Ricoh fi-8170
+ADF (Automatic Document Feeder)
+Manual Feed, Duplex
+Simplex: 70 ppm (200/300 dpi)
+Duplex: 140 ip-m (200/300 dpi)
+Color: 24-bit, grayscale, 8 bit
+Monochrome: 1-bit",2025-05-03-SH01-01,unit,56584,1,1,2025-03-20,Scanner,"Serviceable, Leovic Banosoc - TMSD, NCIP IV-A"
+ROTSE1,"Mapping Equipment, Model Set 650X
+SN: 110706",2012-09-05,set,238992,1,1,2012-08-01,Other,NCIP IV (from CO) c/o Ms. Bernardo
+ROTSE2,Video Digital Camera,2016-VC-001,unit,59300,1,1,2016-09-30,Camera,For Repair c/o Ms. Curato
+ROTSE3,"GPS, GNSS/RTK, GEOMAX",2017-GPS-001,set,1350000,1,1,2017-10-24,Other,"Serviceable, Engr. Marshal Dulagan - TMSD, NCIP IV-A"
+ROTSE4,"GPS, GNSS/RTK, GEOMAX",2017-GPS-002,set,1350000,1,1,2017-10-24,Other,"Serviceable, Engr. Marshal Dulagan - TMSD, NCIP IV-A"
+ROTSE5,"Total Station, GEOMAX, Prismless",2017-TS-004,unit,398000,1,1,2017-10-24,Other,"Serviceable, Engr. Marshal Dulagan - TMSD, NCIP IV-A"
+ROTSE6,"Total Station, GEOMAX", ,unit,398000,1,1,2017-10-24,Other,"Serviceable, Engr. Marshal Dulagan - TMSD, NCIP IV-A"
+ROTSE7,"Total Station, GEOMAX",2017-TS-002,unit,398000,1,1,2017-10-24,Other,"Serviceable, Engr. Marshal Dulagan - TMSD, NCIP IV-A"
+ROOV1,"Motor Vehicle
+Toyotaa Hilux 2.4x4x2, Pick-up",2018-MV-001,unit,1253000,1,1,2018-10-05,Other,"Serviceable, NCIP IV-A"
