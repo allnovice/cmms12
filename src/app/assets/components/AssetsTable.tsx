@@ -15,6 +15,7 @@ type Props = {
   onSort: (key: string) => void;
   onAssignUser: (assetId: string, uid: string) => void;
   onSetOffice: (assetId: string, officeId: string) => void;
+  isAdmin?: boolean;
 };
 
 const ALL_COLUMNS = [
@@ -39,6 +40,7 @@ export default function AssetsTable({
   onSort,
   onAssignUser,
   onSetOffice,
+  isAdmin,
 }: Props) {
   const [visibleColumns, setVisibleColumns] = useState<{ [key: string]: boolean }>({});
 
@@ -91,6 +93,7 @@ export default function AssetsTable({
               onAssignUser={onAssignUser}
               onSetOffice={onSetOffice}
               visibleColumns={visibleColumns}
+              isAdmin={isAdmin}
             />
           ))}
         </tbody>

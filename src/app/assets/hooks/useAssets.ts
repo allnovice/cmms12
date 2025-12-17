@@ -5,7 +5,10 @@ import { collection, getDocs, doc, updateDoc, arrayUnion, arrayRemove } from "fi
 import { db } from "@/firebase";
 import { Asset, Office, User } from "@/types";
 
+import { useAuth } from '@/context/AuthContext';
+
 export default function useAssets() {
+  const { user } = useAuth();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -27,6 +30,11 @@ export default function useAssets() {
   }, []);
 
   const handleAssignUser = async (assetId: string, uid: string) => {
+    if (user?.role !== "admin") {
+      alert("Only admins can assign users to assets.");
+      return;
+    }
+
     setUpdating(assetId);
     const asset = assets.find((a) => a.id === assetId);
     const previousUid = asset?.assignedTo;
@@ -60,6 +68,11 @@ export default function useAssets() {
   };
 
   const handleSetOffice = async (assetId: string, officeId: string) => {
+    if (user?.role !== "admin") {
+      alert("Only admins can change an asset's office.");
+      return;
+    }
+
     const selected = offices.find((o) => o.id === officeId);
     if (!selected) return;
     setUpdating(assetId);

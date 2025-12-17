@@ -16,6 +16,7 @@ type Props = {
   visibleColumns: { [key: string]: boolean };
   onAssignUser: (assetId: string, uid: string) => void;
   onSetOffice: (assetId: string, officeId: string) => void;
+  isAdmin?: boolean;
 };
 
 export default function AssetRow({
@@ -27,6 +28,7 @@ export default function AssetRow({
   visibleColumns,
   onAssignUser,
   onSetOffice,
+  isAdmin,
 }: Props) {
   const router = useRouter();
 
@@ -65,7 +67,7 @@ export default function AssetRow({
             value={asset.assignedTo || ""}
             users={users}
             onChange={uid => onAssignUser(asset.id, uid)}
-            disabled={updating}
+            disabled={updating || !isAdmin}
           />
         </td>
       )}
@@ -75,7 +77,7 @@ export default function AssetRow({
             value={offices.find(o => o.name === asset.location)?.id || ""}
             offices={offices}
             onChange={officeId => onSetOffice(asset.id, officeId)}
-            disabled={updating}
+            disabled={updating || !isAdmin}
           />
         </td>
       )}

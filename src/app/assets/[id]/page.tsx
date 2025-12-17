@@ -32,9 +32,13 @@ type Asset = {
   [key: string]: any;
 };
 
+import { useAuth } from "@/context/AuthContext";
+
 export default function AssetDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [asset, setAsset] = useState<Asset | null>(null);
   const [assignedUser, setAssignedUser] = useState("");
 
@@ -65,14 +69,22 @@ export default function AssetDetail({ params }: { params: Promise<{ id: string }
 
   // DELETE PHOTO FUNCTION
   const handleDeletePhoto = async (url: string) => {
+    if (!isAdmin) {
+      alert("Admin only: you are not allowed to delete photos.");
+      return;
+    }
+
     if (!confirm("Delete this photo?")) return;
 
     const public_id = extractPublicId(url);
 
     try {
+      const token = await (await import("@/firebase")).auth.currentUser?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+
       const res = await fetch("/api/deleteAssetPhoto", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ public_id }),
       });
       const data = await res.json();
@@ -98,6 +110,11 @@ export default function AssetDetail({ params }: { params: Promise<{ id: string }
 
   // DELETE ASSET FUNCTION
   const handleDeleteAsset = async () => {
+    if (!isAdmin) {
+      alert("Admin only: you are not allowed to delete assets.");
+      return;
+    }
+
     if (asset?.photoUrls && asset.photoUrls.length > 0) {
       alert("Cannot delete asset with photos. Delete photos first.");
       return;
@@ -118,22 +135,26 @@ export default function AssetDetail({ params }: { params: Promise<{ id: string }
   return (
     <div style={{ padding: "20px", position: "relative" }}>
       {/* DELETE ASSET BUTTON TOP RIGHT */}
-      <button
-        onClick={handleDeleteAsset}
-        style={{
-          position: "absolute",
-          top: 20,
-          right: 20,
-          background: "red",
-          color: "white",
-          border: "none",
-          padding: "8px 12px",
-          borderRadius: "4px",
-          cursor: "pointer",
-        }}
-      >
-        Delete Asset
-      </button>
+      {isAdmin ? (
+        <button
+          onClick={handleDeleteAsset}
+          style={{
+            position: "absolute",
+            top: 20,
+            right: 20,
+            background: "red",
+            color: "white",
+            border: "none",
+            padding: "8px 12px",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          Delete Asset
+        </button>
+      ) : (
+        <div style={{ position: "absolute", top: 20, right: 20, color: "#777" }}>Admin only</div>
+      )}
 
       {/* Photo Gallery */}
       <div style={{ marginBottom: "20px" }}>
@@ -154,23 +175,25 @@ export default function AssetDetail({ params }: { params: Promise<{ id: string }
                     border: "1px solid #ccc",
                   }}
                 />
-                <button
-                  onClick={() => handleDeletePhoto(url)}
-                  style={{
-                    position: "absolute",
-                    top: "5px",
-                    right: "5px",
-                    background: "red",
-                    color: "white",
-                    border: "none",
-                    padding: "5px 8px",
-                    fontSize: "12px",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                  }}
-                >
-                  ✕
-                </button>
+                {isAdmin ? (
+                  <button
+                    onClick={() => handleDeletePhoto(url)}
+                    style={{
+                      position: "absolute",
+                      top: "5px",
+                      right: "5px",
+                      background: "red",
+                      color: "white",
+                      border: "none",
+                      padding: "5px 8px",
+                      fontSize: "12px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ✕
+                  </button>
+                ) : null}
               </div>
             ))}
           </div>
@@ -178,14 +201,18 @@ export default function AssetDetail({ params }: { params: Promise<{ id: string }
           <p>No photos uploaded.</p>
         )}
 
-        <AssetPhotoUploader
-          assetId={asset.id}
-          onUploaded={(url) =>
-            setAsset((prev) =>
-              prev ? { ...prev, photoUrls: [...(prev.photoUrls || []), url] } : prev
-            )
-          }
-        />
+        {isAdmin ? (
+          <AssetPhotoUploader
+            assetId={asset.id}
+            onUploaded={(url) =>
+              setAsset((prev) =>
+                prev ? { ...prev, photoUrls: [...(prev.photoUrls || []), url] } : prev
+              )
+            }
+          />
+        ) : (
+          <p style={{ color: "#777" }}>Only admins can upload photos.</p>
+        )}
       </div>
 
       {/* Asset Details */}

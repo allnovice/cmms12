@@ -28,9 +28,16 @@ export default function AssetPhotoUploader({ assetId, onUploaded }: AssetPhotoUp
       formData.append("file", file);
       formData.append("assetId", assetId);
 
+      // include auth token (required for server-side admin check)
+      const token = await (await import("@/firebase")).auth.currentUser?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+
       const res = await fetch("/api/uploadAsset", {
         method: "POST",
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const data = await res.json();

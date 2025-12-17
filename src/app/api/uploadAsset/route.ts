@@ -1,11 +1,16 @@
 // src/app/api/uploadAsset/route.ts
 import { v2 as cloudinary } from "cloudinary";
+import { requireAdmin } from "@/lib/firebaseAdmin";
 
 cloudinary.config({
   cloud_url: process.env.CLOUDINARY_URL!,
 });
 
 export async function POST(req: Request) {
+  // require admin
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return new Response(auth.message, { status: auth.status });
+
   try {
     const data = await req.formData();
     const file = data.get("file") as File;
