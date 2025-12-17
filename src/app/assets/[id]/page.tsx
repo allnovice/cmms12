@@ -79,12 +79,9 @@ export default function AssetDetail({ params }: { params: Promise<{ id: string }
     const public_id = extractPublicId(url);
 
     try {
-      const token = await (await import("@/firebase")).auth.currentUser?.getIdToken();
-      if (!token) throw new Error("Not authenticated");
-
       const res = await fetch("/api/deleteAssetPhoto", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ public_id }),
       });
       const data = await res.json();

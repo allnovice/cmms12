@@ -2,14 +2,11 @@
 
 This project now restricts assignment/office changes and asset photo/upload/delete operations to admin users only. Changes made:
 
-- Added server-side helper: `src/lib/firebaseAdmin.ts` to verify ID tokens and check `users/{uid}.role`.
-- Protected API endpoints:
-  - `POST /api/uploadAsset` now requires an admin token.
-  - `POST /api/deleteAssetPhoto` now requires an admin token.
-- Client-side changes:
-  - `AssetPhotoUploader` now sends the current user's ID token in the Authorization header.
+- **Server helper removed:** `src/lib/firebaseAdmin.ts` has been removed to match this project's approach of using the client SDK and Firestore rules instead of a local Admin SDK helper.
+- **API endpoints:** `POST /api/uploadAsset` and `POST /api/deleteAssetPhoto` do not perform server-side admin checks in this branch (they simply perform Cloudinary upload/delete). If you need server-side protection for Cloudinary operations, consider either re-adding a server helper using env vars or moving those operations to Cloud Functions.
+- Client-side changes remain:
   - Asset list/detail pages hide/disable assignment/select controls and upload/delete actions for non-admin users.
-- Added example Firestore rules in `firestore.rules` to enforce server-side security for assets.
+- Added example Firestore rules in `firestore.rules` to enforce DB-level restrictions for assets.
 
 Quick verification steps
 
