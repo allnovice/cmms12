@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, getDocs, doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "@/firebase";
 import { Asset, Office, User } from "@/types";
 
@@ -13,6 +13,13 @@ export default function useAssets() {
   const [offices, setOffices] = useState<Office[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [columns, setColumns] = useState<{ key: string; label: string }[]>([]);
+
+  const prettify = (k: string) =>
+    k
+      .replace(/([A-Z])/g, " $1")
+      .replace(/_/g, " ")
+      .replace(/^./, (c) => c.toUpperCase());
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,9 +29,59 @@ export default function useAssets() {
         getDocs(collection(db, "users")),
       ]);
 
-      setAssets(assetSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Asset)));
+      const assetsData = assetSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Asset));
+      setAssets(assetsData);
       setOffices(officeSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Office)));
       setUsers(userSnap.docs.map((d) => ({ uid: d.id, fullname: d.data().fullname || "Unnamed", assignedAssets: (d.data() as any).assignedAssets || [] })));
+
+      // derive columns dynamically from asset fields (fallback if no explicit schema exists)
+      const keysSet = new Set<string>();
+      assetsData.forEach(a => {
+        Object.keys(a).forEach(k => {
+          if (k === 'id' || k === 'photoUrls') return; // skip internal
+          keysSet.add(k);
+        });
+      });
+
+      const keys = Array.from(keysSet);
+      const preferred = [
+        'article',
+        'typeOfEquipment',
+        'description',
+        'propertyNumber',
+        'serialNumber',
+        'acquisitionDate',
+        'acquisitionValue',
+        'assignedTo',
+        'location',
+      ];
+
+      const ordered = keys.sort((a, b) => {
+        const ia = preferred.indexOf(a);
+        const ib = preferred.indexOf(b);
+        if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+        return a.localeCompare(b);
+      });
+
+      // If there's an explicit columns config in Firestore, use that instead
+      try {
+        const cfgRef = doc(db, "meta", "assetColumns");
+        const cfgSnap = await getDoc(cfgRef);
+        if (cfgSnap.exists()) {
+          const cfg = cfgSnap.data();
+          const cols = (cfg.columns || []).map((c: any) => (typeof c === "string" ? { key: c, label: prettify(c) } : { key: c.key, label: c.label || prettify(c.key) }));
+          if (cols.length > 0) {
+            setColumns(cols);
+          } else {
+            setColumns(ordered.map((k) => ({ key: k, label: prettify(k) })));
+          }
+        } else {
+          setColumns(ordered.map((k) => ({ key: k, label: prettify(k) })));
+        }
+      } catch (err) {
+        setColumns(ordered.map((k) => ({ key: k, label: prettify(k) })));
+      }
+
     };
     fetchData();
   }, []);
@@ -85,5 +142,5 @@ export default function useAssets() {
     setUpdating(null);
   };
 
-  return { assets, offices, users, updating, handleAssignUser, handleSetOffice };
+  return { assets, offices, users, updating, handleAssignUser, handleSetOffice, columns };
 }

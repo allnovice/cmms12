@@ -74,6 +74,19 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+/* On wide screens use the available width (with side padding from layout-main) */
+@media (min-width: 1200px) {
+  .layout-main {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+  .dashboard-card {
+    max-width: none; /* allow full width within padded container */
+    width: calc(100% - 6rem); /* account for left+right padding */
+    border-radius: 10px;
+  }
+}
+
 /* ✅ Responsive tweaks */
 @media (max-width: 768px) {
   .layout-main {

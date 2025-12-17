@@ -9,6 +9,7 @@ type Props = {
   assets: Asset[];
   offices: Office[];
   users: User[];
+  columns: { key: string; label: string }[];
   highlightId?: string | null;
   updating: string | null;
   sortConfig: { key: string; direction: "asc" | "desc" } | null;
@@ -18,22 +19,11 @@ type Props = {
   isAdmin?: boolean;
 };
 
-const ALL_COLUMNS = [
-  { key: "article", label: "Article" },
-  { key: "typeOfEquipment", label: "Type" },
-  { key: "description", label: "Description" },
-  { key: "propertyNumber", label: "Property #" },
-  { key: "serialNumber", label: "Serial #" },
-  { key: "acquisitionDate", label: "Acq. Date" },
-  { key: "acquisitionValue", label: "Acq. Value" },
-  { key: "assignedTo", label: "Assigned To" },
-  { key: "office", label: "Office" },
-];
-
 export default function AssetsTable({
   assets,
   offices,
   users,
+  columns,
   highlightId,
   updating,
   sortConfig,
@@ -44,18 +34,19 @@ export default function AssetsTable({
 }: Props) {
   const [visibleColumns, setVisibleColumns] = useState<{ [key: string]: boolean }>({});
 
-  // Load from localStorage on mount
+  // Load from localStorage or use columns when they become available
   useEffect(() => {
+    if (!columns || columns.length === 0) return;
     const saved = localStorage.getItem("assetsVisibleColumns");
     if (saved) {
       setVisibleColumns(JSON.parse(saved));
     } else {
       // default all visible
       const defaults: { [key: string]: boolean } = {};
-      ALL_COLUMNS.forEach(c => (defaults[c.key] = true));
+      columns.forEach((c) => (defaults[c.key] = true));
       setVisibleColumns(defaults);
     }
-  }, []);
+  }, [columns]);
 
   // Toggle column visibility
   const handleToggleColumn = (key: string) => {
@@ -77,17 +68,18 @@ export default function AssetsTable({
         <thead>
           <tr>
             <th>📍</th>
-            {ALL_COLUMNS.map(c => renderHeader(c.label, c.key))}
+            {columns.map((c) => renderHeader(c.label, c.key))}
           </tr>
         </thead>
 
         <tbody>
-          {assets.map(a => (
+          {assets.map((a) => (
             <AssetRow
               key={a.id}
               asset={a}
               offices={offices}
               users={users}
+              columns={columns}
               highlight={highlightId === a.id}
               updating={updating === a.id}
               onAssignUser={onAssignUser}
@@ -101,7 +93,7 @@ export default function AssetsTable({
 
       {/* Column Visibility Checkboxes */}
       <div style={{ marginTop: "10px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-        {ALL_COLUMNS.map(c => (
+        {columns.map((c) => (
           <label key={c.key} style={{ fontSize: "0.9rem", cursor: "pointer" }}>
             <input
               type="checkbox"

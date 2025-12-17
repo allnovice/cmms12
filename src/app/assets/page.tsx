@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 export default function AssetsPage() {
-  const { assets, offices, users, updating, handleAssignUser, handleSetOffice } = useAssets();
+  const { assets, offices, users, updating, handleAssignUser, handleSetOffice, columns } = useAssets();
   const { sortedItems, sortConfig, handleSort } = useSorting(assets);
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("highlight");
@@ -20,6 +20,7 @@ export default function AssetsPage() {
     <div className="table-wrapper">
       <AssetsTable
         assets={sortedItems}
+        columns={columns}
         highlightId={highlightId}
         sortConfig={sortConfig}
         onSort={handleSort}
