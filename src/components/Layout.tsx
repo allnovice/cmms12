@@ -37,6 +37,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading } = useAuth();
+  const isLoginPage = pathname === "/login";
+  const isDashboardPage = pathname === "/";
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [pmNotifications, setPmNotifications] = useState<PmItem[]>([]);
@@ -80,7 +82,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   // ✅ Fetch both on mount + every 30s
   useEffect(() => {
-    if (!user || !process.env.NEXT_PUBLIC_SERV_URL2) return;
+    if (isLoginPage || !user || !process.env.NEXT_PUBLIC_SERV_URL2) return;
     const active = { value: true };
 
     fetchFormNotifications(user, active);
@@ -95,11 +97,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       active.value = false;
       clearInterval(interval);
     };
-  }, [user]);
+  }, [isLoginPage, user]);
 
   // ✅ Refresh immediately when returning from /notifications
   useEffect(() => {
-    if (!user) return;
+    if (isLoginPage || !user) return;
     if (pathname !== "/notifications") {
       const active = { value: true };
       fetchFormNotifications(user, active);
@@ -108,7 +110,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         active.value = false;
       };
     }
-  }, [pathname, user]);
+  }, [isLoginPage, pathname, user]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -135,11 +137,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   useEffect(() => {
+    if (isLoginPage) return;
     if (!loading && !user) router.replace("/login");
-  }, [user, loading, router]);
+  }, [isLoginPage, user, loading, router]);
+
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
 
   if (loading) return <p>Loading...</p>;
   if (!user) return <p>Redirecting...</p>;
+
+  const cardClassName = isDashboardPage ? "dashboard-card dashboard-card--home" : "dashboard-card";
 
   return (
     <div className="layout-container">
@@ -164,7 +173,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="layout-main">
-        <div className="dashboard-card">{children}</div>
+        <div className={cardClassName}>{children}</div>
       </main>
 
       <style jsx>{`
