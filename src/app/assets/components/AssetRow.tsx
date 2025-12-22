@@ -6,7 +6,6 @@ import { Asset, Office, User } from "@/types";
 import LocateButton from "./LocateButton";
 import UserSelect from "./UserSelect";
 import OfficeSelect from "./OfficeSelect";
-import "../AssetsTable.css";
 
 type Props = {
   asset: Asset;

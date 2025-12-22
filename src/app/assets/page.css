@@ -2,12 +2,12 @@
 
 /* Scrollable wrapper */
 .table-wrapper {
-max-height: 500px;
-overflow-y: auto;
-border: 1px solid var(--border-color, rgba(0,0,0,0.1));
-border-radius: 8px;
-background-color: var(--card-bg);
-box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+	max-height: clamp(360px, 70vh, 900px);
+	overflow-y: auto;
+	border: 1px solid var(--border-color, rgba(0,0,0,0.1));
+	border-radius: 8px;
+	background-color: var(--card-bg);
+	box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 /* Table */

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import AssetRow from "./AssetRow";
 import { Asset, Office, User } from "@/types";
-import "../AssetsTable.css";
 
 type Props = {
   assets: Asset[];
@@ -66,7 +65,7 @@ export default function AssetsTable({
 
   return (
     <>
-      <table className="users-table">
+      <table className="assets-table">
         <thead>
           <tr>
             <th>📍</th>
