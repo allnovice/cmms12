@@ -158,6 +158,12 @@ function LatestAssetSection() {
   const [canScrollRight, setCanScrollRight] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+  const scrollByCards = (direction: "left" | "right") => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const scrollAmount = node.clientWidth * 0.75;
+    node.scrollBy({ left: direction === "left" ? -scrollAmount : scrollAmount, behavior: "smooth" });
+  };
 
   useEffect(() => {
     const fetchRandomAssets = async () => {
