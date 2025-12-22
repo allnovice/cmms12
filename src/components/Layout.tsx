@@ -18,6 +18,7 @@ import {
 } from "react-icons/fi";
 import { useAuth } from "@/context/AuthContext";
 import "@/app/globals.css";
+import "./Layout.css";
 
 interface NotificationItem {
   docId: string;

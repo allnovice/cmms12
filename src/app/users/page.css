@@ -1,11 +1,22 @@
 /* page.css */
 
-/* Scrollable table wrapper */
+/* Table wrapper that flexes with the dashboard card */
 .table-wrapper {
-  max-height: 400px;
-  overflow-y: auto;
-  border: 1px solid rgba(0,0,0,0.2);
-  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.18);
+  border-radius: 10px;
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  width: 100%;
+  height: 100%;
+  max-height: calc(100vh - 180px);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+html.dark .table-wrapper {
+  border-color: rgba(255,255,255,0.18);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.6);
 }
 
 /* Table */
@@ -13,6 +24,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.95rem;
+  flex: 1;
 }
 
 .users-table th,
