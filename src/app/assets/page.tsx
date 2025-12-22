@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 export default function AssetsPage() {
-  const { assets, offices, users, updating, handleAssignUser, handleSetOffice, columns } = useAssets();
+  const { assets, offices, users, updating, handleAssignUser, handleSetOffice, handleSetStatus, columns } = useAssets();
   const { sortedItems, sortConfig, handleSort } = useSorting(assets);
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("highlight");
@@ -29,6 +29,7 @@ export default function AssetsPage() {
         updating={updating}
         onAssignUser={handleAssignUser}
         onSetOffice={handleSetOffice}
+        onSetStatus={handleSetStatus}
         isAdmin={isAdmin}
       />
     </div>

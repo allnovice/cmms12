@@ -142,5 +142,17 @@ export default function useAssets() {
     setUpdating(null);
   };
 
-  return { assets, offices, users, updating, handleAssignUser, handleSetOffice, columns };
+  const handleSetStatus = async (assetId: string, status: string) => {
+    if (user?.role !== "admin") {
+      alert("Only admins can change an asset's status.");
+      return;
+    }
+
+    setUpdating(assetId);
+    await updateDoc(doc(db, "assets", assetId), { status });
+    setAssets((prev) => prev.map((a) => (a.id === assetId ? { ...a, status } : a)));
+    setUpdating(null);
+  };
+
+  return { assets, offices, users, updating, handleAssignUser, handleSetOffice, handleSetStatus, columns };
 }

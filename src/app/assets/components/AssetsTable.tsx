@@ -16,6 +16,7 @@ type Props = {
   onSort: (key: string) => void;
   onAssignUser: (assetId: string, uid: string) => void;
   onSetOffice: (assetId: string, officeId: string) => void;
+  onSetStatus: (assetId: string, status: string) => void;
   isAdmin?: boolean;
 };
 
@@ -30,6 +31,7 @@ export default function AssetsTable({
   onSort,
   onAssignUser,
   onSetOffice,
+  onSetStatus,
   isAdmin,
 }: Props) {
   const [visibleColumns, setVisibleColumns] = useState<{ [key: string]: boolean }>({});
@@ -84,6 +86,7 @@ export default function AssetsTable({
               updating={updating === a.id}
               onAssignUser={onAssignUser}
               onSetOffice={onSetOffice}
+              onSetStatus={onSetStatus}
               visibleColumns={visibleColumns}
               isAdmin={isAdmin}
             />

@@ -10,6 +10,11 @@
   width: 100%;
 }
 
+.dashboard-block--row {
+  padding: 0;
+  border: none;
+}
+
 .dashboard-card--home {
   width: 100%;
   max-width: none;
@@ -56,4 +61,30 @@ html.dark .dashboard-block--content {
 .dashboard-grid .latest-user-card,
 .dashboard-grid .latest-assets-container {
   width: 100%;
+}
+
+.dashboard-row {
+  display: flex;
+  gap: clamp(1rem, 2vw, 1.25rem);
+  align-items: stretch;
+}
+
+.dashboard-row__item {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 12px;
+  padding: clamp(1rem, 1.5vw, 1.5rem);
+  background: var(--card-bg, #fff);
+  color: var(--text-color, #0f172a);
+}
+
+html.dark .dashboard-row__item {
+  border-color: rgba(229, 231, 235, 0.2);
+}
+
+@media (max-width: 900px) {
+  .dashboard-row {
+    flex-direction: column;
+  }
 }

@@ -18,6 +18,7 @@ type Props = {
   visibleColumns: { [key: string]: boolean };
   onAssignUser: (assetId: string, uid: string) => void;
   onSetOffice: (assetId: string, officeId: string) => void;
+  onSetStatus: (assetId: string, status: string) => void;
   isAdmin?: boolean;
 };
 
@@ -31,9 +32,17 @@ export default function AssetRow({
   visibleColumns,
   onAssignUser,
   onSetOffice,
+  onSetStatus,
   isAdmin,
 }: Props) {
   const router = useRouter();
+  const STATUS_OPTIONS = [
+    { value: "serviceable", label: "Serviceable" },
+    { value: "unserviceable", label: "Unserviceable" },
+    { value: "disposed", label: "Disposed" },
+    { value: "for disposal", label: "For Disposal" },
+    { value: "unlocated", label: "Unlocated" },
+  ];
 
   const renderCell = (key: string) => {
     // Special handling for known fields
@@ -79,6 +88,26 @@ export default function AssetRow({
           {asset.acquisitionDate
             ? new Date(asset.acquisitionDate.seconds * 1000).toLocaleDateString()
             : "-"}
+        </td>
+      );
+    }
+
+    if (key === "status") {
+      return (
+        <td>
+          <select
+            className="asset-status-select"
+            value={(asset.status as string) || ""}
+            onChange={(e) => onSetStatus(asset.id, e.target.value)}
+            disabled={updating || !isAdmin}
+          >
+            <option value="">Select status</option>
+            {STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         </td>
       );
     }
