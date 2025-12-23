@@ -18,7 +18,6 @@ import {
 } from "react-icons/fi";
 import { useAuth } from "@/context/AuthContext";
 import "@/app/globals.css";
-import "./Layout.css";
 
 interface NotificationItem {
   docId: string;
@@ -39,7 +38,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const isLoginPage = pathname === "/login";
-  const isDashboardPage = pathname === "/";
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [pmNotifications, setPmNotifications] = useState<PmItem[]>([]);
@@ -149,7 +147,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   if (loading) return <p>Loading...</p>;
   if (!user) return <p>Redirecting...</p>;
 
-  const cardClassName = isDashboardPage ? "dashboard-card dashboard-card--home" : "dashboard-card";
+  const cardClassName = "dashboard-card";
 
   return (
     <div className="layout-container">
