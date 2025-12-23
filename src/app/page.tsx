@@ -614,15 +614,7 @@ function LatestUserSection() {
       <div className="users-header">
         <p className="eyebrow">People Spotlight</p>
         <div className="users-header__row">
-          <h3 className="title">Meet spotlighted teammates</h3>
-          <div className="users-controls">
-            <button className="carousel-nav" onClick={() => handleNavigate("left")} aria-label="Show previous teammate">
-              ‹
-            </button>
-            <button className="carousel-nav" onClick={() => handleNavigate("right")} aria-label="Show next teammate">
-              ›
-            </button>
-          </div>
+          <h3 className="title">Meet spotlighted teammates</h3>        
         </div>
       </div>
 
