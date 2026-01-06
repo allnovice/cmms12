@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { collection, getCountFromServer, getDocs, getDoc, doc } from "firebase/firestore";
+import { collection, getCountFromServer, getDocs, getDoc, doc, query, where } from "firebase/firestore";
 import { Timestamp } from "firebase/firestore";
 import { db } from "@/firebase";
 import UserModal from "../components/UserModal";
@@ -449,6 +449,9 @@ function LatestUserSection() {
   const [users, setUsers] = useState<LatestUserRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [assetModal, setAssetModal] = useState<{ userLabel: string; assets: AssetRecord[] } | null>(null);
+  const [assetsLoading, setAssetsLoading] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -479,6 +482,21 @@ function LatestUserSection() {
     } catch (err) {
       console.error("Error fetching user:", err);
       alert("Failed to fetch user. See console.");
+    }
+  };
+
+  const viewAssignedAssets = async (uid: string) => {
+    setAssetsLoading(true);
+    try {
+      const snap = await getDocs(query(collection(db, "assets"), where("assignedTo", "==", uid)));
+      const assetsForUser: AssetRecord[] = snap.docs.map((d) => ({ uid: d.id, ...(d.data() as any) }));
+      const name = users.find((u) => u.uid === uid)?.fullname || "Assigned assets";
+      setAssetModal({ userLabel: name, assets: assetsForUser });
+    } catch (err) {
+      console.error("Error fetching assigned assets:", err);
+      alert("Failed to load assigned assets. See console.");
+    } finally {
+      setAssetsLoading(false);
     }
   };
 
@@ -513,13 +531,13 @@ function LatestUserSection() {
                   <dt>Email</dt>
                   <dd>{user.email || "—"}</dd>
                 </div>
-                <div>
-                  <dt>Added</dt>
-                  <dd>{user.createdAt?.toDate().toLocaleDateString() || "—"}</dd>
-                </div>
               </dl>
-              <button className="user-card__cta" onClick={() => openUser(user.uid)}>
-                View profile
+              <button
+                className="user-card__cta user-card__cta--subtle"
+                onClick={() => viewAssignedAssets(user.uid)}
+                disabled={assetsLoading}
+              >
+                {assetsLoading ? "Loading assets..." : "View assigned assets"}
               </button>
             </article>
           ))}
@@ -527,6 +545,29 @@ function LatestUserSection() {
       </div>
 
       {selectedUser && <UserModal user={selectedUser} onClose={closeUser} />}
+      {assetModal && (
+        <div className="modal-overlay" onClick={() => setAssetModal(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setAssetModal(null)} aria-label="Close">
+              ×
+            </button>
+            <h3 className="modal-title">{assetModal.userLabel}</h3>
+            {assetModal.assets.length === 0 ? (
+              <p className="modal-note">No assets assigned.</p>
+            ) : (
+              <ul className="assigned-assets-list">
+                {assetModal.assets.map((asset) => (
+                  <li key={asset.uid} className="assigned-asset-item">
+                    <button className="assigned-asset-button" onClick={() => router.push(`/assets/${asset.uid}`)}>
+                      {asset.description || asset.article || asset.uid}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
