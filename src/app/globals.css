@@ -590,10 +590,78 @@ html.dark .asset-meta dt {
   border-radius: 8px;
   flex-shrink: 0;
   border: 1px solid rgba(0,0,0,0.1);
+  cursor: pointer;
 }
 
 html.dark .photo {
   border: 1px solid rgba(255,255,255,0.1);
+}
+
+.asset-photo-modal {
+  width: min(96vw, 1400px);
+  max-width: 96vw;
+  background: var(--card-bg);
+  color: var(--text-color);
+  padding: 0.75rem 0.75rem 1rem;
+  border-radius: 12px;
+}
+
+.asset-photo-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.asset-photo-modal__controls {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.asset-photo-btn {
+  border: 1px solid rgba(15, 23, 42, 0.15);
+  background: rgba(15, 23, 42, 0.03);
+  color: inherit;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.asset-photo-btn:hover {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+html.dark .asset-photo-btn {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+html.dark .asset-photo-btn:hover {
+  background: rgba(59, 130, 246, 0.16);
+  border-color: rgba(191, 219, 254, 0.35);
+}
+
+.asset-photo-viewport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 82vh;
+  overflow: auto;
+  background: radial-gradient(circle at center, rgba(0,0,0,0.05), transparent 55%);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.asset-photo-full {
+  max-width: 100%;
+  max-height: 76vh;
+  transition: transform 0.15s ease;
+  object-fit: contain;
+  border-radius: 10px;
 }
 
 .carousel-nav {
@@ -672,6 +740,13 @@ html.dark .photo {
   width: 90%;
   max-width: 420px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.modal.asset-photo-modal {
+  width: min(96vw, 1400px);
+  max-width: 96vw;
+  padding: 0.75rem 0.75rem 1rem;
+  border-radius: 12px;
 }
 
 .modal-close {
