@@ -2,14 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { collection, getCountFromServer, getDocs, getDoc, doc, query, orderBy, limit } from "firebase/firestore";
+import { collection, getCountFromServer, getDocs, getDoc, doc } from "firebase/firestore";
 import { Timestamp } from "firebase/firestore";
 import { db } from "@/firebase";
 import UserModal from "../components/UserModal";
 
 // Styles are globally applied via globals.css
 
-const ASSET_SHOWCASE_LIMIT = 8;
 const USER_SHOWCASE_LIMIT = 6;
 
 function shuffleArray<T>(items: T[]) {
@@ -336,15 +335,15 @@ function LatestAssetSection() {
     const fetchRandomAssets = async () => {
       try {
         const ref = collection(db, "assets");
-        const q = query(ref, orderBy("createdAt", "desc"), limit(25));
-        const snap = await getDocs(q);
+        const snap = await getDocs(ref);
         const items: AssetRecord[] = snap.docs.map((d) => ({ uid: d.id, ...(d.data() as any) }));
         const withPhotos = items.filter((asset) => Array.isArray(asset.photoUrls) && asset.photoUrls.length > 0);
         const selectionSource = withPhotos.length ? withPhotos : items;
-        const showcase = shuffleArray(selectionSource).slice(0, ASSET_SHOWCASE_LIMIT);
-        setAssets(showcase);
+        // Randomize but keep every asset so the gallery lists them all.
+        const randomized = shuffleArray(selectionSource);
+        setAssets(randomized);
 
-        const uids = Array.from(new Set(showcase.map((a) => a.assignedTo).filter((x): x is string => !!x)));
+        const uids = Array.from(new Set(randomized.map((a) => a.assignedTo).filter((x): x is string => !!x)));
         const names: Record<string, string> = {};
         await Promise.all(
           uids.map(async (uid) => {
