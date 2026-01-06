@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { collection, getCountFromServer, getDocs, getDoc, doc } from "firebase/firestore";
 import { Timestamp } from "firebase/firestore";
@@ -320,16 +320,7 @@ function LatestAssetSection() {
   const [loading, setLoading] = useState(true);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
-  const scrollByCards = (direction: "left" | "right") => {
-    const node = scrollRef.current;
-    if (!node) return;
-    const scrollAmount = node.clientWidth * 0.75;
-    node.scrollBy({ left: direction === "left" ? -scrollAmount : scrollAmount, behavior: "smooth" });
-  };
 
   useEffect(() => {
     const fetchRandomAssets = async () => {
@@ -366,22 +357,6 @@ function LatestAssetSection() {
     fetchRandomAssets();
   }, []);
 
-  useEffect(() => {
-    const handleScrollState = () => {
-      const node = scrollRef.current;
-      if (!node) return;
-      const { scrollLeft, scrollWidth, clientWidth } = node;
-      setCanScrollLeft(scrollLeft > 8);
-      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 8);
-    };
-
-    handleScrollState();
-    const node = scrollRef.current;
-    if (!node) return;
-    node.addEventListener("scroll", handleScrollState, { passive: true });
-    return () => node.removeEventListener("scroll", handleScrollState);
-  }, [assets]);
-
   const openUser = async (uid: string) => {
     try {
       const snap = await getDoc(doc(db, "users", uid));
@@ -409,15 +384,7 @@ function LatestAssetSection() {
       </div>
 
       <div className="assets-carousel">
-        <button
-          className="carousel-nav carousel-nav--left"
-          onClick={() => scrollByCards("left")}
-          disabled={!canScrollLeft}
-          aria-label="Scroll assets left"
-        >
-          ‹
-        </button>
-        <div className="assets-scroll" ref={scrollRef}>
+        <div className="assets-scroll">
           {assets.map((asset) => (
             <article key={asset.uid} className="asset-card">
               <header className="asset-card__header">
@@ -462,14 +429,6 @@ function LatestAssetSection() {
             </article>
           ))}
         </div>
-        <button
-          className="carousel-nav carousel-nav--right"
-          onClick={() => scrollByCards("right")}
-          disabled={!canScrollRight}
-          aria-label="Scroll assets right"
-        >
-          ›
-        </button>
       </div>
 
       {selectedUser && <UserModal user={selectedUser} onClose={closeUser} />}
@@ -490,39 +449,6 @@ function LatestUserSection() {
   const [users, setUsers] = useState<LatestUserRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const cardWidthRef = useRef(0);
-  const scrollToIndex = (targetIndex: number, behavior: ScrollBehavior = "smooth") => {
-    if (typeof window === "undefined") return;
-    const node = scrollRef.current;
-    if (!node) return;
-
-    let width = cardWidthRef.current;
-    if (!width) {
-      const firstCard = node.querySelector<HTMLElement>(".user-card");
-      if (firstCard) {
-        const styles = window.getComputedStyle(node);
-        const gap = parseFloat(styles.columnGap || styles.gap || "0") || 0;
-        width = firstCard.offsetWidth + gap;
-        cardWidthRef.current = width;
-      } else {
-        width = node.clientWidth;
-      }
-    }
-
-    node.scrollTo({ left: width * targetIndex, behavior });
-  };
-
-  const handleNavigate = (direction: "left" | "right") => {
-    if (!users.length) return;
-    setActiveIndex((prev) => {
-      const total = users.length;
-      const next = direction === "right" ? (prev + 1) % total : (prev - 1 + total) % total;
-      scrollToIndex(next);
-      return next;
-    });
-  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -541,53 +467,6 @@ function LatestUserSection() {
 
     fetchUsers();
   }, []);
-
-  useEffect(() => {
-    if (!users.length || typeof window === "undefined") return;
-
-    const measure = () => {
-      const node = scrollRef.current;
-      if (!node) return;
-      const firstCard = node.querySelector<HTMLElement>(".user-card");
-      if (!firstCard) return;
-      const styles = window.getComputedStyle(node);
-      const gap = parseFloat(styles.columnGap || styles.gap || "0") || 0;
-      cardWidthRef.current = firstCard.offsetWidth + gap;
-    };
-
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [users]);
-
-  useEffect(() => {
-    if (!users.length || typeof window === "undefined") return;
-    const node = scrollRef.current;
-    if (!node) return;
-
-    let raf: number | null = null;
-    const handleScroll = () => {
-      if (!cardWidthRef.current || !users.length) return;
-      if (raf) window.cancelAnimationFrame(raf);
-      raf = window.requestAnimationFrame(() => {
-        const idx = Math.round(node.scrollLeft / cardWidthRef.current);
-        const normalized = ((idx % users.length) + users.length) % users.length;
-        setActiveIndex(normalized);
-      });
-    };
-
-    node.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      node.removeEventListener("scroll", handleScroll);
-      if (raf) window.cancelAnimationFrame(raf);
-    };
-  }, [users]);
-
-  useEffect(() => {
-    if (!users.length) return;
-    scrollToIndex(0, "auto");
-    setActiveIndex(0);
-  }, [users]);
 
   const openUser = async (uid: string) => {
     try {
@@ -618,14 +497,7 @@ function LatestUserSection() {
       </div>
 
       <div className="users-carousel">
-        <button
-          className="carousel-nav carousel-nav--left"
-          onClick={() => handleNavigate("left")}
-          aria-label="Scroll users left"
-        >
-          ‹
-        </button>
-        <div className="users-scroll" ref={scrollRef}>
+        <div className="users-scroll">
           {users.map((user) => (
             <article key={user.uid} className="user-card">
               <header>
@@ -652,13 +524,6 @@ function LatestUserSection() {
             </article>
           ))}
         </div>
-        <button
-          className="carousel-nav carousel-nav--right"
-          onClick={() => handleNavigate("right")}
-          aria-label="Scroll users right"
-        >
-          ›
-        </button>
       </div>
 
       {selectedUser && <UserModal user={selectedUser} onClose={closeUser} />}

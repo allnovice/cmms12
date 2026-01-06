@@ -490,7 +490,7 @@ html.dark .eyebrow {
 
 .assets-carousel {
   position: relative;
-  padding: 0 2.5rem;
+  padding: 0;
 }
 
 .assets-scroll {
@@ -716,7 +716,7 @@ html.dark .photo {
 
 .users-carousel {
   position: relative;
-  padding: 0 2.5rem;
+  padding: 0;
 }
 
 .users-scroll {
