@@ -41,6 +41,7 @@ export default function AssetDetail({ params }: { params: Promise<{ id: string }
   const isAdmin = user?.role === "admin";
   const [asset, setAsset] = useState<Asset | null>(null);
   const [assignedUser, setAssignedUser] = useState("");
+  const [photoModal, setPhotoModal] = useState<{ url: string; zoom: number } | null>(null);
 
   useEffect(() => {
     const fetchAsset = async () => {
@@ -170,7 +171,9 @@ export default function AssetDetail({ params }: { params: Promise<{ id: string }
                     borderRadius: "8px",
                     objectFit: "cover",
                     border: "1px solid #ccc",
+                    cursor: "pointer",
                   }}
+                  onClick={() => setPhotoModal({ url, zoom: 1 })}
                 />
                 {isAdmin ? (
                   <button
@@ -228,6 +231,49 @@ export default function AssetDetail({ params }: { params: Promise<{ id: string }
       <p><strong>Office Location:</strong> {asset.location || "-"}</p>
       <p><strong>Latitude:</strong> {asset.latitude || "-"}</p>
       <p><strong>Longitude:</strong> {asset.longitude || "-"}</p>
+
+      {photoModal && (
+        <div className="modal-overlay" onClick={() => setPhotoModal(null)}>
+          <div className="modal asset-photo-modal" onClick={(e) => e.stopPropagation()}>
+            <header className="asset-photo-modal__header">
+              <div className="asset-photo-modal__controls">
+                <button
+                  className="asset-photo-btn"
+                  onClick={() => setPhotoModal((p) => (p ? { ...p, zoom: Math.min(p.zoom + 0.2, 4) } : p))}
+                  aria-label="Zoom in"
+                >
+                  +
+                </button>
+                <button
+                  className="asset-photo-btn"
+                  onClick={() => setPhotoModal((p) => (p ? { ...p, zoom: Math.max(p.zoom - 0.2, 0.6) } : p))}
+                  aria-label="Zoom out"
+                >
+                  −
+                </button>
+                <button
+                  className="asset-photo-btn"
+                  onClick={() => setPhotoModal((p) => (p ? { ...p, zoom: 1 } : p))}
+                  aria-label="Reset zoom"
+                >
+                  100%
+                </button>
+              </div>
+              <button className="modal-close" onClick={() => setPhotoModal(null)} aria-label="Close">
+                ×
+              </button>
+            </header>
+            <div className="asset-photo-viewport">
+              <img
+                src={photoModal.url}
+                alt="asset full"
+                className="asset-photo-full"
+                style={{ transform: `scale(${photoModal.zoom})` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
