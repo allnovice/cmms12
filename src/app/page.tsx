@@ -113,6 +113,14 @@ function AssetInsightsSection() {
   const [userRows, setUserRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [insightModal, setInsightModal] = useState<
+    | {
+        title: string;
+        items: { id: string; primary: string; secondary?: string; href?: string }[];
+      }
+    | null
+  >(null);
+  const router = useRouter();
 
   useEffect(() => {
     let alive = true;
@@ -190,6 +198,52 @@ function AssetInsightsSection() {
 
   const max = Math.max(...groups.map((g) => g.count), 1);
 
+  const buildAssetDisplay = (a: any) => {
+    const primary = a.description || a.article || a.uid;
+    const secondaryParts = [a.typeOfEquipment, a.location, a.status].filter(Boolean);
+    return { id: a.uid, primary, secondary: secondaryParts.join(" • "), href: `/assets/${a.uid}` };
+  };
+
+  const buildUserDisplay = (u: any) => {
+    const primary = u.fullname || "Unnamed user";
+    const secondary = [u.designation, u.email].filter(Boolean).join(" • ");
+    return { id: u.uid, primary, secondary };
+  };
+
+  const openGroup = (label: string) => {
+    let items: { id: string; primary: string; secondary?: string; href?: string }[] = [];
+    switch (insightKey) {
+      case "type":
+        items = assetRows.filter((a: any) => (a.typeOfEquipment || "Unspecified").toString() === label).map(buildAssetDisplay);
+        break;
+      case "status":
+        items = assetRows.filter((a: any) => (a.status || "Unspecified").toString() === label).map(buildAssetDisplay);
+        break;
+      case "location":
+        items = assetRows.filter((a: any) => (a.location || "Unassigned").toString() === label).map(buildAssetDisplay);
+        break;
+      case "assignment":
+        if (label === "Assigned") {
+          items = assetRows.filter((a: any) => !!a.assignedTo).map(buildAssetDisplay);
+        } else {
+          items = assetRows.filter((a: any) => !a.assignedTo).map(buildAssetDisplay);
+        }
+        break;
+      case "usersByOffice":
+        items = userRows.filter((u: any) => divisionToOffice(u.division) === label).map(buildUserDisplay);
+        break;
+      case "usersByDesignation":
+        items = userRows.filter((u: any) => (u.designation || "Unspecified").toString() === label).map(buildUserDisplay);
+        break;
+      case "division":
+        items = userRows.filter((u: any) => (u.division || "Unspecified").toString() === label).map(buildUserDisplay);
+        break;
+      default:
+        items = [];
+    }
+    setInsightModal({ title: label, items });
+  };
+
   if (loading) return <div className="insights-note">Loading insight data…</div>;
   if (error) return <div className="insights-note">{error}</div>;
   if (!groups.length) return <div className="insights-note">No data available yet.</div>;
@@ -224,15 +278,45 @@ function AssetInsightsSection() {
 
       <div className="bar-chart" role="img" aria-label="Top asset categories by count">
         {groups.map((g) => (
-          <div key={g.label} className="bar-row">
+          <button key={g.label} className="bar-row bar-row--clickable" onClick={() => openGroup(g.label)}>
             <span className="bar-label">{g.label}</span>
             <div className="bar-track">
               <div className="bar" style={{ width: `${Math.max((g.count / max) * 100, 6)}%` }} />
             </div>
             <span className="bar-value">{g.count}</span>
-          </div>
+          </button>
         ))}
       </div>
+
+      {insightModal && (
+        <div className="modal-overlay" onClick={() => setInsightModal(null)}>
+          <div className="modal insights-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setInsightModal(null)} aria-label="Close">
+              ×
+            </button>
+            <h3 className="modal-title">{insightModal.title}</h3>
+            {insightModal.items.length === 0 ? (
+              <p className="modal-note">No records found.</p>
+            ) : (
+              <ul className="insights-modal-list">
+                {insightModal.items.map((item) => (
+                  <li key={item.id}>
+                    <button
+                      className={`insights-modal-item${item.href ? " insights-modal-item--link" : ""}`}
+                      onClick={() => {
+                        if (item.href) router.push(item.href);
+                      }}
+                    >
+                      <span className="insights-modal-item__primary">{item.primary}</span>
+                      {item.secondary && <span className="insights-modal-item__secondary">{item.secondary}</span>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
