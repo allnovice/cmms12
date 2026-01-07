@@ -17,7 +17,7 @@ export default function AssetsPage() {
   if (!assets.length) return <p className="loading-text">Loading assets...</p>;
 
   return (
-    <div className="assets-table-wrapper">
+    <div className="assets-page">
       <AssetsTable
         assets={sortedItems}
         columns={columns}

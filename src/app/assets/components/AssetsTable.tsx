@@ -64,49 +64,52 @@ export default function AssetsTable({
     ) : null;
 
   return (
-    <>
-      <table className="assets-table">
-        <thead>
-          <tr>
-            <th>📍</th>
-            {columns.map((c) => renderHeader(c.label, c.key))}
-          </tr>
-        </thead>
-
-        <tbody>
-          {assets.map((a) => (
-            <AssetRow
-              key={a.id}
-              asset={a}
-              offices={offices}
-              users={users}
-              columns={columns}
-              highlight={highlightId === a.id}
-              updating={updating === a.id}
-              onAssignUser={onAssignUser}
-              onSetOffice={onSetOffice}
-              onSetStatus={onSetStatus}
-              visibleColumns={visibleColumns}
-              isAdmin={isAdmin}
-            />
-          ))}
-        </tbody>
-      </table>
-
+    <div className="assets-table-layout">
       {/* Column Visibility Checkboxes */}
-      <div style={{ marginTop: "10px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-        {columns.map((c) => (
-          <label key={c.key} style={{ fontSize: "0.9rem", cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={!!visibleColumns[c.key]}
-              onChange={() => handleToggleColumn(c.key)}
-              style={{ marginRight: "4px" }}
-            />
-            {c.label}
-          </label>
-        ))}
+      <div className="column-card">
+        <div className="column-toggles">
+          {columns.map((c) => (
+            <label key={c.key} className="column-toggle">
+              <input
+                type="checkbox"
+                checked={!!visibleColumns[c.key]}
+                onChange={() => handleToggleColumn(c.key)}
+              />
+              {c.label}
+            </label>
+          ))}
+        </div>
       </div>
-    </>
+
+      <div className="assets-table-wrapper">
+        <table className="assets-table">
+          <thead>
+            <tr>
+              <th>📍</th>
+              {columns.map((c) => renderHeader(c.label, c.key))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {assets.map((a) => (
+              <AssetRow
+                key={a.id}
+                asset={a}
+                offices={offices}
+                users={users}
+                columns={columns}
+                highlight={highlightId === a.id}
+                updating={updating === a.id}
+                onAssignUser={onAssignUser}
+                onSetOffice={onSetOffice}
+                onSetStatus={onSetStatus}
+                visibleColumns={visibleColumns}
+                isAdmin={isAdmin}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
