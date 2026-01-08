@@ -23,8 +23,21 @@ const REQUIRED_HEADERS = [
   "acquisitionValue",
 ];
 
-// Add a single asset to Firestore
+// Add a single asset (SKIP if article exists)
 async function addAsset(asset) {
+  if (!asset.article) {
+    console.log("Skipped row with empty article");
+    return;
+  }
+
+  const ref = db.collection("assets").doc(asset.article);
+  const snap = await ref.get();
+
+  if (snap.exists) {
+    console.log("Skipped duplicate article:", asset.article);
+    return;
+  }
+
   const quantityPerPropertyCard = Number(asset.quantityPerPropertyCard) || 0;
   const quantityPerPhysicalCount = Number(asset.quantityPerPhysicalCount) || 0;
   const acquisitionValue = Number(asset.acquisitionValue) || 0;
@@ -46,25 +59,27 @@ async function addAsset(asset) {
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   };
 
-  await db.collection("assets").add(payload);
-  console.log("Added asset:", payload.article);
+  await ref.set(payload);
+  console.log("Added asset:", asset.article);
 }
 
-// Parse CSV using csv-parse (handles quotes, commas, multiline)
+// Parse CSV
 function parseCSV(csvFile) {
   const text = fs.readFileSync(csvFile, "utf8");
 
   const records = parse(text, {
-    columns: true,          // first row = headers
-    skip_empty_lines: true, // ignore blank lines
-    trim: true,             // trim spaces
+    columns: true,
+    skip_empty_lines: true,
+    trim: true,
   });
 
   if (records.length === 0) throw new Error("CSV is empty");
 
-  // Check for missing headers
-  const missing = REQUIRED_HEADERS.filter(h => !Object.keys(records[0]).includes(h));
-  if (missing.length) throw new Error(`CSV header error. Missing column(s): ${missing.join(", ")}`);
+  const missing = REQUIRED_HEADERS.filter(
+    h => !Object.keys(records[0]).includes(h)
+  );
+  if (missing.length)
+    throw new Error(`CSV header error. Missing: ${missing.join(", ")}`);
 
   return records;
 }
@@ -82,7 +97,7 @@ async function main() {
 
     try {
       const assets = parseCSV(csvPath);
-      console.log(`Processing ${assets.length} entries from CSV...`);
+      console.log(`Processing ${assets.length} entries...`);
 
       for (const asset of assets) {
         await addAsset(asset);
@@ -136,7 +151,7 @@ node addAss.js file assets.csv
     acquisitionValue,
   });
 
-  console.log("Single asset added successfully.");
+  console.log("Single asset processed.");
 }
 
 main().catch(console.error);
