@@ -3,6 +3,27 @@
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with create-next-app.
 
+Full script/operator docs live in [docs/](docs/) (CSV imports, options, logo upload, user onboarding, etc.).
+
+## 🚀 Quick start (app)
+- Install deps: `npm install`
+- Env: copy `.env.local` and fill Firebase + Cloudinary/Gmail keys (see below)
+- Run dev: `npm run dev`
+- Prod build: `npm run build && npm start`
+
+## 🔑 Env vars (common)
+Set these in `.env.local`:
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `CLOUDINARY_URL` (for asset/logo uploads)
+- `GMAIL_SENDER` (for onboarding emails)
+
+## 🌐 Hosted
+- Live (if configured): https://cmms12.vercel.app
+
 ---
 
 ## 🧩 Basic Server Run
@@ -46,6 +67,13 @@ This guide explains how to set up Firebase, Gmail OAuth, and run the Node script
      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
      NEXT_PUBLIC_FIREBASE_APP_ID=
      ```
+
+    - Additional helper docs (imports, options, logos, onboarding) are in [docs/](docs/):
+       - [addAss2](docs/addAss2.md): import assets via CSV/CLI
+       - [adloc](docs/adloc.md): import/upsert office locations
+       - [adOptions](docs/adOptions.md): add dropdown options (division/designation)
+       - [adCompanyLogo](docs/adCompanyLogo.md): upload company logo to Cloudinary + Firestore
+       - [addUser2](docs/addUser2.md): create users and email password setup links (Gmail OAuth)
 
 3. **Download Firebase Service Account**  
    - Go to **Project Settings → Service Accounts → Generate new private key**.  
