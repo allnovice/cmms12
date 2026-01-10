@@ -785,6 +785,46 @@ html.dark .asset-photo-btn:hover {
   max-width: 92vw;
 }
 
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.modal-export {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(245, 245, 245, 0.96));
+  color: var(--text-color);
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.modal-export:hover {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.96), rgba(219, 234, 254, 0.96));
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.16);
+}
+
+.modal-export:active {
+  transform: translateY(1px);
+}
+
+html.dark .modal-export {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.85));
+  color: #e5e7eb;
+}
+
+html.dark .modal-export:hover {
+  border-color: rgba(125, 211, 252, 0.55);
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.22), rgba(37, 99, 235, 0.22));
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
 .modal-close {
   float: right;
   border: none;

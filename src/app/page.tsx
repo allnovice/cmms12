@@ -244,6 +244,28 @@ function AssetInsightsSection() {
     setInsightModal({ title: label, items });
   };
 
+  const exportInsightModalToCsv = () => {
+    if (!insightModal) return;
+    const headers = ["id", "primary", "secondary", "href"];
+    const escapeCsv = (val: any) => {
+      const s = val == null ? "" : String(val);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+
+    const csv = [
+      headers.join(","),
+      ...insightModal.items.map((row) => headers.map((h) => escapeCsv((row as any)[h])).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `insights-${insightModal.title.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}.csv`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
   if (loading) return <div className="insights-note">Loading insight data…</div>;
   if (error) return <div className="insights-note">{error}</div>;
   if (!groups.length) return <div className="insights-note">No data available yet.</div>;
@@ -291,9 +313,20 @@ function AssetInsightsSection() {
       {insightModal && (
         <div className="modal-overlay" onClick={() => setInsightModal(null)}>
           <div className="modal insights-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setInsightModal(null)} aria-label="Close">
-              ×
-            </button>
+            <div className="modal-actions">
+              <button
+                className="modal-export"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  exportInsightModalToCsv();
+                }}
+              >
+                Export CSV
+              </button>
+              <button className="modal-close" onClick={() => setInsightModal(null)} aria-label="Close">
+                ×
+              </button>
+            </div>
             <h3 className="modal-title">{insightModal.title}</h3>
             {insightModal.items.length === 0 ? (
               <p className="modal-note">No records found.</p>
