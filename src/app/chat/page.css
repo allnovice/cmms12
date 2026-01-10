@@ -137,3 +137,41 @@ html.dark .chat-suggestion-item:hover {
   border-top: 1px solid #ddd;
   line-height: .2;
 }
+
+.survey-helper {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border: 1px dashed rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  background: rgba(0, 112, 243, 0.06);
+  color: var(--text-color);
+  font-size: 0.9rem;
+  display: grid;
+  gap: 4px;
+}
+
+html.dark .survey-helper {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.survey-helper__label {
+  font-weight: 600;
+}
+
+.survey-helper__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.survey-helper__option {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+html.dark .survey-helper__option {
+  background: rgba(255, 255, 255, 0.08);
+}

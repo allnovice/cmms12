@@ -25,6 +25,8 @@ export default function ChatMessages({
   // Username + Arrow rules
   // ---------------------------------------------------------
   const getUsernameAndArrow = (msg: Message) => {
+    if (msg.localHelp) return { username: null, arrow: null, color: "#000", prefixLeft: false };
+
     if (!currentUser) return { username: null, arrow: null, color: "#000", prefixLeft: false };
 
     const sender = getUser(msg.senderUid || "");
@@ -94,7 +96,7 @@ export default function ChatMessages({
       ) : (
         messages.map((msg) => {
           const { username, arrow, color, prefixLeft } = getUsernameAndArrow(msg);
-          const isSystemHelp = msg.senderUid === "system-help";
+          const isSystemHelp = msg.senderUid === "system-help" || msg.localHelp;
 
           return (
             <div
